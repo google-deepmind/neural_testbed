@@ -29,6 +29,9 @@ class LoadTest(parameterized.TestCase):
       ['classification/0'],
       ['classification/10'],
       ['classification/100'],
+      ['regression/0'],
+      ['regression/10'],
+      ['regression/100'],
   ])
   def test_gp_loading(self, gp_id: str):
     """Tests you can load from gp_id and data format matches prior."""

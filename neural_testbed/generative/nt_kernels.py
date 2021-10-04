@@ -18,30 +18,48 @@
 """Specific neural tangent kernels."""
 
 import dataclasses
-import jax.config
+
 from neural_tangents import stax
 from neural_tangents.utils import typing as nt_types
 import numpy as np
+import typing_extensions
 
-jax.config.update('jax_enable_x64', True)
+
+class KernelCtor(typing_extensions.Protocol):
+  """Interface for generating a kernel for a given input dimension."""
+
+  def __call__(self, input_dim: int) -> nt_types.KernelFn:
+    """Generates a kernel for a given input dimension."""
 
 
 @dataclasses.dataclass
-class NtkOutput:
-  init: nt_types.InitFn
-  apply: nt_types.ApplyFn
-  kernel: nt_types.KernelFn
+class MLPKernelCtor(KernelCtor):
+  """Generates a GP kernel corresponding to an infinitely-wide MLP."""
+  num_hidden_layers: int
+  activation: nt_types.InternalLayer
+
+  def __post_init__(self):
+    assert self.num_hidden_layers >= 1, 'Must have at least one hidden layer.'
+
+  def __call__(self, input_dim: int = 1) -> nt_types.KernelFn:
+    """Generates a kernel for a given input dimension."""
+    limit_width = 50  # Implementation detail of neural_testbed, unused.
+    layers = [
+        stax.Dense(limit_width, W_std=1, b_std=1 / np.sqrt(input_dim))
+    ]
+    for _ in range(self.num_hidden_layers - 1):
+      layers.append(self.activation)
+      layers.append(stax.Dense(limit_width, W_std=1, b_std=0))
+    layers.append(self.activation)
+    layers.append(stax.Dense(1, W_std=1, b_std=0))
+    _, _, kernel = stax.serial(*layers)
+    return kernel
 
 
 def make_benchmark_kernel(input_dim: int = 1) -> nt_types.KernelFn:
-  """Generate a benchmark GP kernel for neural testbed."""
-  layers = [
-      stax.Dense(100, W_std=1, b_std=1 / np.sqrt(input_dim)),
-      stax.Sign(),
-      stax.Dense(1, W_std=1, b_std=0),
-  ]
-  _, _, kernel = stax.serial(*layers)
-  return kernel
+  """Creates the benchmark kernel used in leaderboard = 2-layer ReLU."""
+  kernel_ctor = MLPKernelCtor(num_hidden_layers=2, activation=stax.Relu())
+  return kernel_ctor(input_dim)
 
 
 def make_linear_kernel(input_dim: int = 1) -> nt_types.KernelFn:

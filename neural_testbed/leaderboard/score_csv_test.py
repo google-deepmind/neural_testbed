@@ -61,23 +61,26 @@ class ScoreCsvTest(parameterized.TestCase):
     data = score_csv.load_entries(entry)
 
     # Check that the data is the right type
-    assert isinstance(data, score.LeaderboardData)
+    self.assertIsInstance(data, score.LeaderboardData,
+                          'Data is not the right type')
 
     # Check that the agent name has been passed through
-    assert name in data.names
+    self.assertIn(name, data.names, 'the agent name has been passed through.')
 
     # Check that sweep metadata is joined correctly on gp_id
-    assert 'seed' in data.df.columns
-    assert 'gp_id' in  data.df.columns
+    self.assertIn('gp_id', data.df.columns,
+                  'sweep metadata is not joined correctly on gp_id.')
 
     # Check that we only loaded one agent
-    assert len(data.agents) == 1
+    self.assertLen(data.agents, 1)
     agent_data = data.agents[0]
-    assert isinstance(agent_data, score.AgentData)
+    self.assertIsInstance(agent_data, score.AgentData,
+                          'Agent data is not the right type.')
 
     # Check the quality of this single agent data
-    assert agent_data.name == name
-    assert agent_data.pct_health < 0.5
+    self.assertEqual(agent_data.name, name,
+                     'Agent data does not have the correct name.')
+    self.assertLess(agent_data.pct_health, 0.5, 'Health is less that 50%.')
 
 
 if __name__ == '__main__':

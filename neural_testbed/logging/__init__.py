@@ -24,3 +24,7 @@ from neural_testbed.logging.base import LoggingWrapper
 
 # Logging csv
 from neural_testbed.logging.csv_logger import wrap_problem as wrap_problem_csv
+
+# Logging to python memory
+from neural_testbed.logging.memory_logger import wrap_problem as wrap_problem_memory
+

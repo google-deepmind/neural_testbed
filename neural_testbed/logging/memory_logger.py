@@ -15,22 +15,31 @@
 # limitations under the License.
 # ============================================================================
 
-"""Loading a leaderboard instance for the testbed."""
+"""In-memory logging system."""
+
+from typing import Any, Mapping
 
 from neural_testbed import base as testbed_base
-from neural_testbed.real_data import datasets
-from neural_testbed.real_data import load_classification
-from neural_testbed.real_data import load_regression
+from neural_testbed.logging import base as logging_base
+import pandas as pd
 
 
-def problem_from_id(ds_name: str) -> testbed_base.TestbedProblem:
-  """Load a classification problem from a real dataset specified by config."""
-  if ds_name not in datasets.DATASETS_SETTINGS:
-    raise ValueError(f'dataset={ds_name} is not supported')
-  else:
-    dataset_info = datasets.DATASETS_SETTINGS[ds_name]
-  if ds_name in datasets.REGRESSION_DATASETS:
-    return load_regression.load(dataset_info)
-  else:
-    return load_classification.load(dataset_info)
+def wrap_problem(
+    problem: testbed_base.TestbedProblem) -> testbed_base.TestbedProblem:
+  return logging_base.LoggingWrapper(problem, Logger())
 
+
+class Logger(logging_base.Logger):
+  """Saves data to python memory."""
+
+  def __init__(self):
+    """Initializes a new python in-memory logger."""
+    self._data = []
+
+  def write(self, data: Mapping[str, Any]):
+    """Adds a row to the internal list of data and saves to CSV."""
+    self._data.append(data)
+
+  @property
+  def df(self) -> pd.DataFrame:
+    return pd.DataFrame(self._data)

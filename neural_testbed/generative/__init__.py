@@ -17,12 +17,29 @@
 
 """Exposing the public methods of generative data models."""
 
-# Ensemble classification
-from neural_testbed.generative.ensemble_gp_classification import GPClassificationEnsemble
+# Classification w.r.t environment likelihood
+from neural_testbed.generative.classification_envlikelihood import ClassificationEnvLikelihood
+
+# Factories
+from neural_testbed.generative.factories import make_2layer_mlp_generative_model
+
+# Classification with GP likelihood
+from neural_testbed.generative.gp_classification_envlikelihood import GPClassificationEnvLikelihood
+
+# Regression
+from neural_testbed.generative.gp_regression import GPRegression
+from neural_testbed.generative.gp_regression import TestbedGPRegression
+
+# Regression w.r.t environment likelihood
+from neural_testbed.generative.gp_regression_envlikelihood import GPRegressionEnvLikelihood
 
 # Neural tangents kernels
+from neural_testbed.generative.nt_kernels import KernelCtor
 from neural_testbed.generative.nt_kernels import make_benchmark_kernel
 from neural_testbed.generative.nt_kernels import make_linear_kernel
+from neural_testbed.generative.nt_kernels import MLPKernelCtor
 
 # Plotting
+from neural_testbed.generative.plotting import generate_2d_plots
 from neural_testbed.generative.plotting import sanity_1d
+from neural_testbed.generative.plotting import sanity_plots

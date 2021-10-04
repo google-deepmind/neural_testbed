@@ -16,6 +16,17 @@
 # ============================================================================
 
 """Exposing the public methods of real data."""
-from neural_testbed.real_data.load import DatasetConfig
-from neural_testbed.real_data.load import problem_from_ds_name
-from neural_testbed.real_data.real_data_classification import RealDataClassification
+from neural_testbed.real_data.data_sampler import RealDataSampler
+from neural_testbed.real_data.datasets import CLASSIFICATION_DATASETS
+from neural_testbed.real_data.datasets import DatasetInfo
+from neural_testbed.real_data.datasets import DATASETS
+from neural_testbed.real_data.datasets import DATASETS_SETTINGS
+from neural_testbed.real_data.datasets import IMAGE_DATASETS
+from neural_testbed.real_data.datasets import ORIGINAL_CLASSIFICATION_DATASETS
+from neural_testbed.real_data.datasets import ORIGINAL_IMAGE_DATASETS
+from neural_testbed.real_data.datasets import ORIGINAL_STRUCTURED_DATASETS
+from neural_testbed.real_data.datasets import REGRESSION_DATASETS
+from neural_testbed.real_data.datasets import STRUCTURED_DATASETS
+from neural_testbed.real_data.load import problem_from_id
+from neural_testbed.real_data.load_classification import load as load_classification
+from neural_testbed.real_data.load_regression import load as load_regression

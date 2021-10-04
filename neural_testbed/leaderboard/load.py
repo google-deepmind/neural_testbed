@@ -17,94 +17,152 @@
 
 """Loading a leaderboard instance for the testbed."""
 
-from typing import Callable, Tuple
+from typing import Tuple
 
+from absl import logging
 import chex
-import dataclasses
+import haiku as hk
 import jax
-from neural_tangents.utils import typing as nt_types
 from neural_testbed import base as testbed_base
 from neural_testbed import generative
 from neural_testbed import likelihood
 from neural_testbed.leaderboard import sweep
 
 
-KernelCtor = Callable[[int], nt_types.KernelFn]  # Maps input_dim -> KernelFn
+def problem_from_id(problem_id: str) -> testbed_base.TestbedProblem:
+  """Factory method to load leaderboard problem from problem_id.
+
+  This is a user facing function and its only job is to translate problem_id
+  to  prior kowledge.
+  Args:
+    problem_id: a string representing a standard problem in the leaderboard.
+  Returns:
+    A testbed problem.
+  """
+
+  logging.info('Loading problem_id: %s', problem_id)
+
+  try:
+    problem_config = sweep.SETTINGS[problem_id]
+  except KeyError:
+    raise ValueError(f'Unrecognised problem_id={problem_id}')
+
+  return problem_from_config(problem_config)
 
 
-@dataclasses.dataclass
-class ClassificationTestbedConfig:
-  """Configuration options for classification testbed instance."""
-  num_train: int
-  input_dim: int
-  seed: int
-  temperature: float
-  num_classes: int = 2
-  num_models: int = 10_000
-  num_test_seeds: int = 1000
-  num_enn_samples: int = 100
-  kernel_ctor: KernelCtor = generative.make_benchmark_kernel
-  num_layers: int = 1  # Output to prior knowledge
+def problem_from_config(
+    problem_config: sweep.ProblemConfig) -> testbed_base.TestbedProblem:
+  """Returns a testbed problem given a problem config."""
+  assert problem_config.prior_knowledge.num_classes > 0
+
+  if problem_config.prior_knowledge.num_classes > 1:
+    return _load_classification(problem_config)
+  else:
+    return _load_regression(problem_config)
 
 
-def gaussian_data(seed: int,
+def _load_classification(
+    problem_config: sweep.ProblemConfig) -> likelihood.SampleBasedTestbed:
+  """Loads a classification problem from problem_config."""
+  rng = hk.PRNGSequence(problem_config.seed)
+  prior_knowledge = problem_config.prior_knowledge
+
+  data_sampler = generative.make_2layer_mlp_generative_model(
+      input_dim=prior_knowledge.input_dim,
+      num_train=prior_knowledge.num_train,
+      key=next(rng),
+      temperature=prior_knowledge.temperature,
+      tau=prior_knowledge.tau,
+      hidden=50,
+      num_classes=prior_knowledge.num_classes,
+  )
+  if prior_knowledge.tau >= 10:
+    sample_based_kl = likelihood.CategoricalClusterKL(
+        cluster_alg=likelihood.RandomProjection(dimension=7),
+        num_enn_samples=problem_config.num_enn_samples,
+        num_test_seeds=problem_config.num_test_seeds,
+        key=next(rng),
+        num_classes=prior_knowledge.num_classes,
+    )
+  else:
+    sample_based_kl = likelihood.CategoricalKLSampledXSampledY(
+        num_test_seeds=problem_config.num_test_seeds,
+        num_enn_samples=problem_config.num_enn_samples,
+        key=next(rng),
+        num_classes=prior_knowledge.num_classes,
+    )
+  sample_based_kl = likelihood.add_classification_accuracy_ece(
+      sample_based_kl,
+      num_test_seeds=int(1_000 / prior_knowledge.tau) + 1,
+      num_enn_samples=100,
+      num_classes=prior_knowledge.num_classes,
+  )
+  return likelihood.SampleBasedTestbed(
+      data_sampler=data_sampler,
+      sample_based_kl=sample_based_kl,
+      prior_knowledge=prior_knowledge,
+  )
+
+
+def gaussian_data(key: chex.PRNGKey,
                   num_train: int,
                   input_dim: int,
                   num_test: int) -> Tuple[chex.Array, chex.Array]:
   """Generate Gaussian training and test data."""
-  train_key, test_key = jax.random.split(jax.random.PRNGKey(seed))
+  train_key, test_key = jax.random.split(key)
   x_train = jax.random.normal(train_key, [num_train, input_dim])
   x_test = jax.random.normal(test_key, [num_test, input_dim])
   return x_train, x_test
 
 
-def classification_load_from_config(
-    config: ClassificationTestbedConfig) -> likelihood.SampleBasedTestbed:
-  """Loads classification problem from config."""
+def _load_regression(
+    problem_config: sweep.ProblemConfig) -> testbed_base.TestbedProblem:
+  """Loads a regression problem from problem_config."""
+  rng = hk.PRNGSequence(problem_config.seed)
+  prior_knowledge = problem_config.prior_knowledge
+
   x_train, x_test = gaussian_data(
-      seed=config.seed,
-      num_train=config.num_train,
-      input_dim=config.input_dim,
-      num_test=config.num_test_seeds,
+      key=next(rng),
+      num_train=prior_knowledge.num_train,
+      input_dim=prior_knowledge.input_dim,
+      num_test=problem_config.num_test_cache,
   )
-  data_sampler = generative.GPClassificationEnsemble(
-      kernel_fn=config.kernel_ctor(config.input_dim),
+
+  if problem_config.epistemic_only:
+    # Special case used only for the ENN paper.
+    assert prior_knowledge.tau == 1, 'Only works for tau=1'
+    data_sampler = generative.GPRegression(
+        kernel_fn=generative.make_benchmark_kernel(prior_knowledge.input_dim),
+        x_train=x_train,
+        x_test=x_test,
+        key=next(rng),
+        tau=prior_knowledge.tau,
+        noise_std=prior_knowledge.noise_std,
+    )
+    return generative.TestbedGPRegression(
+        data_sampler,
+        prior_knowledge,
+        key=next(rng),
+        num_enn_samples=problem_config.num_enn_samples)
+
+  data_sampler = generative.GPRegressionEnvLikelihood(
+      kernel_fn=generative.make_benchmark_kernel(prior_knowledge.input_dim),
       x_train=x_train,
       x_test=x_test,
-      num_classes=config.num_classes,
-      temperature=config.temperature,
-      num_models=config.num_models,
-      seed=config.seed,
+      key=next(rng),
+      tau=prior_knowledge.tau,
+      noise_std=prior_knowledge.noise_std,
   )
-  sample_based_kl = likelihood.CategoricalSampleKL(
-      num_test_seeds=config.num_test_seeds,
-      num_enn_samples=config.num_enn_samples,
-  )
-  sample_based_kl = likelihood.add_classification_accuracy(sample_based_kl)
-  prior_knowledge = testbed_base.PriorKnowledge(
-      input_dim=config.input_dim,
-      num_train=config.num_train,
-      num_classes=config.num_classes,
-      layers=config.num_layers,
-      temperature=config.temperature,
+  sample_based_kl = likelihood.GaussianSampleKL(
+      # This KL estimator cannot handle very large num_test_seed * tau
+      num_test_seeds=int(problem_config.num_test_seeds
+                         / prior_knowledge.tau) + 1,
+      num_enn_samples=problem_config.num_enn_samples,
+      enn_sigma=prior_knowledge.noise_std,
+      key=next(rng),
   )
   return likelihood.SampleBasedTestbed(
-      data_sampler, sample_based_kl, prior_knowledge)
-
-
-def classification_load(
-    num_train: int, input_dim: int, seed: int, temperature: float,
-) -> likelihood.SampleBasedTestbed:
-  """Load classification GP from sweep hyperparameters."""
-  config = ClassificationTestbedConfig(num_train, input_dim, seed, temperature)
-  return classification_load_from_config(config)
-
-
-def problem_from_id(gp_id: str) -> likelihood.SampleBasedTestbed:
-  """Factory method to load leaderboard GP from gp_id."""
-  if gp_id not in sweep.SETTINGS:
-    raise ValueError(f'Unrecognised gp_id={gp_id}')
-  elif 'classification' in gp_id:
-    return classification_load(**sweep.SETTINGS[gp_id])
-  else:
-    raise ValueError(f'Load function unspecified for gp_id={gp_id}')
+      data_sampler=data_sampler,
+      sample_based_kl=sample_based_kl,
+      prior_knowledge=prior_knowledge,
+  )

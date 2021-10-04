@@ -15,22 +15,17 @@
 # limitations under the License.
 # ============================================================================
 
-"""Loading a leaderboard instance for the testbed."""
+"""Exposing public methods for approximate posterior training."""
 
-from neural_testbed import base as testbed_base
-from neural_testbed.real_data import datasets
-from neural_testbed.real_data import load_classification
-from neural_testbed.real_data import load_regression
+# ENN SGD
+from neural_testbed.agents.enn_agent import extract_enn_sampler
+from neural_testbed.agents.enn_agent import make_learning_curve_enn_agent
+from neural_testbed.agents.enn_agent import VanillaEnnAgent
+from neural_testbed.agents.enn_agent import VanillaEnnConfig
 
-
-def problem_from_id(ds_name: str) -> testbed_base.TestbedProblem:
-  """Load a classification problem from a real dataset specified by config."""
-  if ds_name not in datasets.DATASETS_SETTINGS:
-    raise ValueError(f'dataset={ds_name} is not supported')
-  else:
-    dataset_info = datasets.DATASETS_SETTINGS[ds_name]
-  if ds_name in datasets.REGRESSION_DATASETS:
-    return load_regression.load(dataset_info)
-  else:
-    return load_classification.load(dataset_info)
-
+# ENN losses
+from neural_testbed.agents.enn_losses import combine_loss_prior_loss
+from neural_testbed.agents.enn_losses import default_enn_loss
+from neural_testbed.agents.enn_losses import default_enn_prior_loss
+from neural_testbed.agents.enn_losses import gaussian_regression_loss
+from neural_testbed.agents.enn_losses import regularized_dropout_loss

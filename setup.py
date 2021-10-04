@@ -43,8 +43,8 @@ setuptools.setup(
     keywords='probabilistic-inference python machine-learning',
     packages=setuptools.find_packages(),
     install_requires=[
-        'dm-haiku @ git+https://git@github.com/deepmind/dm-haiku',
-        'dm-enn @ git+https://git@github.com/deepmind/dm-enn',
+        'dm-haiku',
+        'dm-enn @ git+https://git@github.com/deepmind/enn',
         'absl-py',
         'numpy',
         'pandas',
@@ -53,7 +53,7 @@ setuptools.setup(
         'tensorflow',
         'tensorflow-datasets',
         'chex',
-        'neural-tangents @ git+https://github.com/google/neural-tangents',
+        'neural-tangents',
         'dataclasses',  # Back-port for Python 3.6.
         'typing-extensions',
         'plotnine',

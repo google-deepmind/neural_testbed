@@ -15,45 +15,36 @@
 # limitations under the License.
 # ============================================================================
 
-"""Tests for neural_testbed.real_data.real_data_classification_test."""
+"""Tests for neural_testbed.real_data.data_sampler."""
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from neural_testbed import real_data
+from neural_testbed import base as testbed_base
+from neural_testbed.real_data import data_sampler as real_data_sampler
 import numpy as np
 
 
 class RealDataClassificationTest(parameterized.TestCase):
 
   @parameterized.product(
-      data_size=[2, 10],
-      input_dim=[1, 10])
-  def test_data(self, data_size: int, input_dim: int):
+      data_size=[1, 10],
+      input_dim=[1, 10],
+      num_classes=[1, 2, 10],
+      tau=[1, 10])
+  def test_data(self,
+                data_size: int,
+                input_dim: int,
+                num_classes: int,
+                tau: int):
     """Test returns for the train_data and test_data methods."""
-    data = [{
-        'x': np.random.rand(data_size, input_dim),
-        'y': np.random.rand(data_size, 1)
-    }]
-    train_iter, test_iter = iter(data), iter(data)
-    data_sampler = real_data.RealDataClassification(
-        train_iter=train_iter, test_iter=test_iter)
+    x = np.random.rand(data_size, input_dim)
+    y = np.random.randint(num_classes, size=(data_size, 1))
+    data = testbed_base.Data(x=x, y=y)
+    train_data, test_data = data, data
+    data_sampler = real_data_sampler.RealDataSampler(train_data, test_data, tau)
     train_data = data_sampler.train_data
-    np.testing.assert_allclose(train_data.x, data[0]['x'], rtol=1e-6, atol=0)
-    np.testing.assert_allclose(train_data.y, data[0]['y'], rtol=1e-6, atol=0)
-
-    for seed in range(data_size):
-      test_data, ll = data_sampler.test_data(seed)
-      self.assertEqual(ll, 0.)
-      np.testing.assert_allclose(
-          test_data.x,
-          np.expand_dims(data[0]['x'][seed], axis=0),
-          rtol=1e-6,
-          atol=0)
-      np.testing.assert_allclose(
-          test_data.y,
-          np.expand_dims(data[0]['y'][seed], axis=0),
-          rtol=1e-6,
-          atol=0)
+    np.testing.assert_allclose(train_data.x, x, rtol=1e-6, atol=0)
+    np.testing.assert_allclose(train_data.y, y, rtol=1e-6, atol=0)
 
 
 if __name__ == '__main__':

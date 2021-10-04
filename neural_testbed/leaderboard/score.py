@@ -18,16 +18,16 @@
 """Scoring/validation capabilities for leaderboard entries."""
 
 import copy
+import dataclasses
 from typing import Any, Optional, Sequence, Tuple
 
-import dataclasses
 from neural_testbed import logging
 from neural_testbed.leaderboard import sweep
 import numpy as np
 import pandas as pd
 
-# Used to fill missing or non-numeric values
-KL_FILL = 100
+# Maximum KL valu used to fill missing or non-numeric values
+KL_FILL = 1e6
 _AGENT_SUFFIX = '_agent'
 
 
@@ -46,7 +46,7 @@ class AgentData:
 @dataclasses.dataclass
 class LeaderboardData:
   """Contains cleaned data for a collections of agents."""
-  agents: Sequence[AgentData]  # All of the consituent agents.
+  agents: Sequence[AgentData]  # All of the constituent agents.
   sweep_vars: Optional[Sequence[str]] = None
 
   def __post_init__(self):
@@ -61,15 +61,38 @@ def join_metadata(df: pd.DataFrame) -> pd.DataFrame:
   metadata = copy.deepcopy(sweep.SETTINGS)
 
   data = []
-  for gp_id, gp_kwargs in metadata.items():
+  for gp_id, problem_config in metadata.items():
     gp_params = {'gp_id': gp_id}
-    gp_params.update(gp_kwargs)
+    gp_params.update(problem_config.meta_data)
     data.append(gp_params)
   gp_df = pd.DataFrame(data)
 
   # TODO(author2): Work out how to handle clash between agent sweep and gp_id
   # e.g. if an agent sweeps over temperature and so does the GP!
   return pd.merge(df, gp_df, on='gp_id', suffixes=(_AGENT_SUFFIX, ''))
+
+
+def _check_drop_duplicate_logs(df: pd.DataFrame,
+                               verbose: bool = True) -> pd.DataFrame:
+  """Check for duplicate logging instances, indicating some kind of error."""
+  main_df = df.copy()
+
+  # Count the number of replicas for each gp_id
+  count_df = main_df.groupby(['gp_id']).apply(len)
+  count_df = count_df.reset_index().rename({0: 'replicas'}, axis=1)
+  count_df = count_df.drop_duplicates(subset=['gp_id'])
+  duplicates = count_df[count_df.replicas > 1]
+
+  # If some gp_id have more than one entry --> print a warning message
+  if len(duplicates) > 0:  # pylint:disable=g-explicit-length-test
+    if verbose:
+      print('WARNING: multiple logs per gp_id, selecting first entry.')
+      print(duplicates.head())
+
+    # Drop duplicate gp_id in case they got logged several times.
+    df = df.drop_duplicates('gp_id')
+
+  return df
 
 
 def _clean_single_agent(df_in: pd.DataFrame,
@@ -84,12 +107,23 @@ def _clean_single_agent(df_in: pd.DataFrame,
   df['raw_kl_estimate'] = df['kl_estimate']
   gp_ids = df.gp_id.unique()
 
-  # Giving the agent a name
+  # Adding data_ratio as a column to df
+  if 'data_ratio' not in df.columns:
+    if 'num_train' in df.columns and 'input_dim' in df.columns:
+      df['data_ratio'] = df['num_train'] / df['input_dim']
+
+  # If agent name is already in the data, rename to flag_agent_name
   if 'agent_name' in df.columns:
     assert len(df.agent_name.unique()) == 1
-    agent_name = df.agent_name.iloc[0]
-  else:
-    df['agent_name'] = agent_name
+    flag_agent_name = df['agent_name'].iloc[0]
+    df['flag_agent_name'] = flag_agent_name
+
+    # Use this as the agent name if none is passed
+    if agent_name == 'agent':
+      agent_name = flag_agent_name
+
+  # Set up a unique name for the agent
+  df['agent_name'] = agent_name
   if verbose:
     print('\n' + '+' * 80)
     print(f'Cleaning data for agent = {agent_name}')
@@ -102,6 +136,10 @@ def _clean_single_agent(df_in: pd.DataFrame,
     print(extra_ids)
     df = df[~df.gp_id.isin(extra_ids)]
 
+  # Check for duplicate logging instances
+  # TODO(author3): Reflect duplicate entries in pct_health
+  df = _check_drop_duplicate_logs(df, verbose)
+
   # Fill missing gp_id
   missing_ids = [idx for idx in leaderboard_sweep if idx not in gp_ids]
   if missing_ids:
@@ -111,7 +149,13 @@ def _clean_single_agent(df_in: pd.DataFrame,
         'kl_estimate': kl_fill,
     }
     for col in df.columns:
-      if len(df[col].unique()) == 1:
+      # TODO(author2): Sort out unhashable columns...
+      try:
+        num_unique = len(df[col].unique())
+      except TypeError:
+        df[col] = df[col].astype(str)
+        num_unique = len(df[col].unique())
+      if num_unique == 1:
         fill_dict[col] = df[col].iloc[0]
     df = pd.concat([df, join_metadata(pd.DataFrame(fill_dict))])
     if verbose:

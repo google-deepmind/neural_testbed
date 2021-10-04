@@ -36,7 +36,7 @@ def _load_entry(entry: entries_csv.Entry) -> Tuple[pd.DataFrame, Sequence[str]]:
     _, name = os.path.split(file_path)
     # Rough and ready error-checking for only neural testbed csv files.
     if not name.startswith(csv_logger.GP_PREFIX):
-      print('Warning - we recommend you use a fresh folder for bsuite results.')
+      print('Warning - we recommend you use a fresh folder for the results.')
       continue
 
     # Then we will assume that the file is actually a neural testbed result

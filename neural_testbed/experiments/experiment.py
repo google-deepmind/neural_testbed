@@ -14,23 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
-"""Loading a leaderboard instance for the testbed."""
+"""Common experiment loop for submitting to the testbed."""
 
 from neural_testbed import base as testbed_base
-from neural_testbed.real_data import datasets
-from neural_testbed.real_data import load_classification
-from neural_testbed.real_data import load_regression
 
 
-def problem_from_id(ds_name: str) -> testbed_base.TestbedProblem:
-  """Load a classification problem from a real dataset specified by config."""
-  if ds_name not in datasets.DATASETS_SETTINGS:
-    raise ValueError(f'dataset={ds_name} is not supported')
-  else:
-    dataset_info = datasets.DATASETS_SETTINGS[ds_name]
-  if ds_name in datasets.REGRESSION_DATASETS:
-    return load_regression.load(dataset_info)
-  else:
-    return load_classification.load(dataset_info)
-
+def run(agent: testbed_base.TestbedAgent,
+        problem: testbed_base.TestbedProblem) -> testbed_base.ENNQuality:
+  """Run an agent on a given testbed problem."""
+  enn_sampler = agent(problem.train_data, problem.prior_knowledge)
+  return problem.evaluate_quality(enn_sampler)

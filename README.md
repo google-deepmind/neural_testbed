@@ -1,11 +1,12 @@
 # The Neural Testbed
 
 ## Introduction
-Neural testbed is a framework for assessing the quality of
-uncertainty estimates in neural networks. The comparison is with a posterior
-approximation computed from reference Gaussian process prior. The Gaussian
-process prior is equivalent to a randomly initialized infinite-width neural
-network.
+
+The Neural Testbed is a framework for assessing and comparing performance of
+uncertainty estimators (which we call agent).  The Testbed implements synthetic data generating
+processes and streamlines the process of sampling data, training agents, and
+evaluating test performance by estimating KL-loss for marginal and high-order
+joint predictions.
 
 ### Uncertainty in deep learning
 
@@ -31,12 +32,16 @@ You can see the current leaderboard at [leaderboard].
 
 The Neural Testbed is a carefully-selected collection of supervised learning
 tasks, where we can compare the quality of a learned (usually neural network)
-posterior against a *known* reference posterior.
+posterior against a reference posterior.
 
-We use Gaussian processes as the generative model in our testbed building on the
-connection between Gaussian processes and [infinite width neural networks]. In
-doing so, we compare the uncertainty estimates against those that would be
-output by an idealized infinite-width neural network.
+The generative model is based around a random 2-layer MLP. Since independent
+data can be generated for each execution, the Testbed can drive insight and
+multiple iterations of algorithm development without risk of overfitting to a
+fixed dataset.  This repository also includes the implementation of a
+comprehensive set of benchmark agents and their performance on the testbed. In
+addition, we provide utilities for evaluating the agents on real dataset where
+the estimate of the cross-entropy loss on the test data is taken to be the
+sample mean of the negative log-likelihoods.
 
 For more information see our [paper]
 
@@ -49,30 +54,30 @@ The Neural Testbed has a very simple interface, specified in
 class EpistemicSampler(typing_extensions.Protocol):
   """Interface for drawing posterior samples from distribution.
 
-  We are considering a model of data: y_i = f(x_i) + e_i.
-  In this case the sampler should only model f(x), not aleatoric y.
+  For classification this should represent the class *logits*.
+  For regression this is the posterior sample of the function f(x).
+  Assumes a batched input x.
   """
 
-  def __call__(self, x: base.Array, seed: int = 0) -> base.Array:
-    """Generate a random sample for epistemic f(x)."""
+  def __call__(self, x: chex.Array, key: chex.PRNGKey) -> chex.Array:
+    """Generate a random sample from approximate posterior distribution."""
 
 
 class TestbedAgent(typing_extensions.Protocol):
   """An interface for specifying a testbed agent."""
 
-  def __call__(self,
-               data: Data,  # (X: base.Array, Y: base.Array)
-               prior: Optional[PriorKnowledge] = None) -> EpistemicSampler:
+  def __call__(self, data: Data, prior: PriorKnowledge) -> EpistemicSampler:
     """Sets up a training procedure given ENN prior knowledge."""
 ```
 
 In order to submit to the testbed you need to define your own `TestbedAgent`: a
 function taking training data and optional prior knowledge and outputting an
 `EpistemicSampler`. The `EpistemicSampler` outputs an approximate posterior
-sample for the unknown function `f` at a given `x`, for a given `seed`. Given a
-`TestbedAgent` the `neural_testbed` will handle everything else and output a
-performance measure for the quality of the uncertainty estimation of the agent.
-
+sample for the unknown function `f` at a given `x`, for a given random `key`.
+Given a `TestbedAgent` the `neural_testbed` will handle everything else and
+output a performance measure for the quality of the uncertainty estimation of
+the agent. It can also evaluate the agent on real dataset by estimating the test
+cross-entropy loss.
 
 
 ### Installation
@@ -104,9 +109,9 @@ If you use `neural_testbed` in your work, please cite the accompanying [paper]:
 
 ```bibtex
 @inproceedings{,
-    title={Epistemic Neural Networks},
+    title={Evaluating Predictive Distributions: Does Bayesian Deep Learning Work?},
     author={},
-    booktitle={Neural Information Processing Systems},
+    booktitle={},
     year={2021},
     url={https://arxiv.org/}
 }
@@ -116,4 +121,3 @@ If you use `neural_testbed` in your work, please cite the accompanying [paper]:
 
 [paper]:https://arxiv.org/
 [leaderboard]: https://colab.research.google.com/github/deepmind/neural_testbed/blob/master/leaderboard/neural_testbed.ipynb
-[infinite width neural networks]:https://arxiv.org/abs/1806.07572

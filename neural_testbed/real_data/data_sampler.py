@@ -18,39 +18,38 @@
 
 from typing import Tuple
 
-from enn import base as enn_base
+import chex
+import jax
 import jax.numpy as jnp
 from neural_testbed import base as testbed_base
 from neural_testbed import likelihood
 
 
-class RealDataClassification(likelihood.GenerativeDataSampler):
-  """A fake data sampler for classification based on real data."""
+class RealDataSampler(likelihood.GenerativeDataSampler):
+  """A fake data sampler for classification/regression based on real data."""
 
-  def __init__(self, train_iter: enn_base.BatchIterator,
-               test_iter: enn_base.BatchIterator):
-    self._train_iter = train_iter
-    self._test_data = next(test_iter)
-    self._x_test = jnp.array(self._test_data['x'])
-    self._y_test = jnp.array(self._test_data['y'])
+  def __init__(self,
+               train_data: testbed_base.Data,
+               test_data: testbed_base.Data,
+               tau: int = 1):
+    self._train_data = train_data
+    self._test_data = test_data
+    self._tau = tau
+    self._x_test = jnp.array(self._test_data.x)
+    self._y_test = jnp.array(self._test_data.y)
     self._num_test_data = self._x_test.shape[0]
 
   @property
   def train_data(self) -> testbed_base.Data:
-    """Returns a batch of train data."""
-    train_data_batch = next(self._train_iter)
-    return testbed_base.Data(x=train_data_batch['x'], y=train_data_batch['y'])
+    """Returns train data."""
+    return self._train_data
 
-  def test_data(self, seed: int) -> Tuple[testbed_base.Data, float]:
+  def test_data(self, key: chex.PRNGKey) -> Tuple[testbed_base.Data, float]:
     """Returns a batch of test data.
 
-    This method is called using self._num_test_data consecutive seeds. At each
-    call, we want to return a different test data. We divide the seed by
-    self._num_test_data to generate a unique index in
-    [0, self._num_test_data - 1].
-
+    This method is called using self._num_test_data consecutive seeds.
     Args:
-      seed: An integer which is used for generating a unique index.
+      key: A key for generating random numbers.
 
     Returns:
       A tuple of 1 test data as a testbed_base.Data and a float which is always
@@ -60,7 +59,7 @@ class RealDataClassification(likelihood.GenerativeDataSampler):
       log-likelihood under posterior. Hence, we set it to 0 and by doing so, we
       can still use one formula in the testbed for calculating kl estimate.
     """
-    data_index = seed % self._num_test_data
+    data_index = jax.random.randint(key, [self._tau], 0, self._num_test_data)
     x_test = self._x_test[data_index, :]
     y_test = self._y_test[data_index, :]
-    return testbed_base.Data(x=x_test[None, :], y=y_test[None, :]), 0.
+    return testbed_base.Data(x=x_test, y=y_test), 0.

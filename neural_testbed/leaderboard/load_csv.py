@@ -25,6 +25,6 @@ from neural_testbed.leaderboard import load
 def problem_from_id(gp_id: str,
                     results_dir: str = '/tmp/neural_testbed',
                     overwrite: bool = False) -> testbed_base.TestbedProblem:
-  """Factory method to load leaderboard GP from gp_id."""
+  """Factory method to load problem from gp_id and wrap it with a csv logger."""
   problem = load.problem_from_id(gp_id)
   return logging.wrap_problem_csv(problem, gp_id, results_dir, overwrite)

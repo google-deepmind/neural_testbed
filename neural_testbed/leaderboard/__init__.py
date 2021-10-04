@@ -18,11 +18,13 @@
 """Exposing the public methods of leaderboard."""
 
 # Leaderboard loading of testbed problem
-from neural_testbed.leaderboard.load import classification_load
-from neural_testbed.leaderboard.load import classification_load_from_config
-from neural_testbed.leaderboard.load import ClassificationTestbedConfig
+# from neural_testbed.leaderboard.load import classification_load
 from neural_testbed.leaderboard.load import gaussian_data
+from neural_testbed.leaderboard.load import problem_from_config
 from neural_testbed.leaderboard.load import problem_from_id
+# from neural_testbed.leaderboard.load import regression_load
+# from neural_testbed.leaderboard.load import regression_load_from_config
+# from neural_testbed.leaderboard.load import RegressionTestbedConfig
 from neural_testbed.leaderboard.load_csv import problem_from_id as problem_from_id_csv
 
 # Leaderboard scoring of experiments
@@ -33,6 +35,14 @@ from neural_testbed.leaderboard.score import LeaderboardData
 
 # Leaderboard sweep of testbed problems
 from neural_testbed.leaderboard.sweep import CLASSIFICATION
+from neural_testbed.leaderboard.sweep import CLASSIFICATION_2D
+from neural_testbed.leaderboard.sweep import CLASSIFICATION_2D_TEST
+from neural_testbed.leaderboard.sweep import CLASSIFICATION_LIGHT
 from neural_testbed.leaderboard.sweep import CLASSIFICATION_TEST
+from neural_testbed.leaderboard.sweep import ENN_PAPER
+from neural_testbed.leaderboard.sweep import ENN_PAPER_TEST
+from neural_testbed.leaderboard.sweep import ProblemConfig
 from neural_testbed.leaderboard.sweep import REGRESSION
+from neural_testbed.leaderboard.sweep import REGRESSION_TEST
 from neural_testbed.leaderboard.sweep import SETTINGS
+

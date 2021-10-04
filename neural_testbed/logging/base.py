@@ -57,15 +57,18 @@ class LoggingWrapper(testbed_base.TestbedProblem):
   def evaluate_quality(
       self,
       enn_sampler: testbed_base.EpistemicSampler) -> testbed_base.ENNQuality:
+    # Before evaluating enn, we record the time at the end of training.
+    train_end = time.time()
     enn_quality = self._problem.evaluate_quality(enn_sampler)
     results = {
         'kl_estimate': float(enn_quality.kl_estimate),
         'total_seconds': time.time() - self._start,
-        'train_seconds': time.time() - self._train_start,
+        'train_seconds': train_end - self._train_start,
+        'evaluation_seconds': time.time() - train_end,
     }
     if enn_quality.extra:
       results.update({
-          key: float(value) for key, value in enn_quality.extra.items()
+          key: value for key, value in enn_quality.extra.items()
       })
     self._logger.write(results)
     return enn_quality

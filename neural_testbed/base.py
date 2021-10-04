@@ -17,24 +17,25 @@
 
 """Base classes for Neural testbed."""
 import abc
+import dataclasses
 from typing import Any, Dict, NamedTuple, Optional
 
 import chex
-import dataclasses
-import numpy as np
 import typing_extensions
 
 
 # Maybe this Data class needs to be a tf.Dataset
 class Data(NamedTuple):
-  x: chex.Array
-  y: chex.Array
+  x: chex.Array  # Always includes a batch index
+  y: chex.Array  # Always includes a batch index
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class PriorKnowledge:
+  """What an agent knows a priori about the problem."""
   input_dim: int
   num_train: int
+  tau: int
   num_classes: int = 1
   layers: Optional[int] = None
   noise_std: Optional[float] = None
@@ -51,20 +52,19 @@ class ENNQuality:
 class EpistemicSampler(typing_extensions.Protocol):
   """Interface for drawing posterior samples from distribution.
 
-  We are considering a model of data: y_i = f(x_i) + e_i.
-  In this case the sampler should only model f(x), not aleatoric y.
+  For classification this should represent the class *logits*.
+  For regression this is the posterior sample of the function f(x).
+  Assumes a batched input x.
   """
 
-  def __call__(self, x: chex.Array, seed: int = 0) -> chex.Array:
-    """Generate a random sample for epistemic f(x)."""
+  def __call__(self, x: chex.Array, key: chex.PRNGKey) -> chex.Array:
+    """Generate a random sample from approximate posterior distribution."""
 
 
 class TestbedAgent(typing_extensions.Protocol):
   """An interface for specifying a testbed agent."""
 
-  def __call__(self,
-               data: Data,
-               prior: Optional[PriorKnowledge] = None) -> EpistemicSampler:
+  def __call__(self, data: Data, prior: PriorKnowledge) -> EpistemicSampler:
     """Sets up a training procedure given ENN prior knowledge."""
 
 
@@ -75,17 +75,13 @@ class TestbedProblem(abc.ABC):
   def train_data(self) -> Data:
     """Access training data from the GP for ENN training."""
 
-  @abc.abstractmethod
-  def evaluate_quality(self, enn_sampler: EpistemicSampler) -> ENNQuality:
-    """Evaluate the quality of a posterior sampler."""
-
   @abc.abstractproperty
   def prior_knowledge(self) -> PriorKnowledge:
     """Information describing the problem instance."""
 
-  def evaluate_t_statistic(self,
-                           sampler_one: EpistemicSampler,
-                           sampler_two: EpistemicSampler) -> float:
-    """Estimates the difference in quality between EpistemicSamplers."""
-    del sampler_one, sampler_two
-    return np.NaN
+  @abc.abstractmethod
+  def evaluate_quality(self, enn_sampler: EpistemicSampler) -> ENNQuality:
+    """Evaluate the quality of a posterior sampler."""
+
+# See experiments/experiment.py for framework to run agent on a problem.
+
