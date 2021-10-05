@@ -37,8 +37,8 @@ class EnsembleConfig:
   l2_weight_decay: float = 1.  # Weight decay
   adaptive_weight_scale: bool = True  # Whether to scale with prior
   distribution: str = 'none'  # Boostrap distribution
-  prior_scale: float = 1.  # Scale of prior function
-  temp_scale_prior: bool = True  # Whether to scale prior with temperature
+  prior_scale: float = 3.  # Scale of prior function
+  temp_scale_prior: str = 'sqrt'  # How to scale prior with temperature
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
   num_batches: int = 1_000  # Number of SGD steps
   seed: int = 0  # Initialization seed
@@ -49,8 +49,12 @@ def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
 
   def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
     prior_scale = config.prior_scale
-    if config.temp_scale_prior:
+    if config.temp_scale_prior == 'linear':
       prior_scale /= prior.temperature
+    elif config.temp_scale_prior == 'sqrt':
+      prior_scale /= float(jnp.sqrt(prior.temperature))
+    else:
+      pass
     return networks.make_ensemble_mlp_with_prior_enn(
         output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         dummy_input=jnp.ones([prior.num_train, prior.input_dim]),

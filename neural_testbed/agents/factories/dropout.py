@@ -38,7 +38,7 @@ class McDropoutConfig:
   dropout_input: bool = False  # Whether to have dropout for the input layer
   exclude_bias_l2: bool = False  # Whether to exclude bias from regularization
   adaptive_weight_scale: bool = True  # Whether to scale with prior
-  hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
+  hidden_sizes: Sequence[int] = (100, 100)  # Hidden sizes for neural network
   num_batches: int = 1000  # Number of SGD steps
   learning_rate: float = 1e-3  # Learning rate for adam optimizer
   seed: int = 0  # Initialization seed
