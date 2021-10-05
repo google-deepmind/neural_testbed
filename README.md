@@ -1,53 +1,47 @@
 # The Neural Testbed
 
-## Introduction
-
 The Neural Testbed is a framework for assessing and comparing performance of
-uncertainty estimators (which we call agent).  The Testbed implements synthetic data generating
-processes and streamlines the process of sampling data, training agents, and
-evaluating test performance by estimating KL-loss for marginal and high-order
-joint predictions.
+uncertainty estimators, i.e., models that output posterior predictive
+distributions rather than a point estimate. We call such models an agent. The
+Testbed implements synthetic data generating processes and streamlines the
+process of sampling data, training agents, and evaluating test performance by
+estimating KL-loss for marginal and high-order joint predictions. The goal is to
+provide a reliable and coherent evaluation framework that accelarate the
+development of computational tools for approximate Bayesian inference that
+leverage some of the strengths of deep learning.
 
-### Uncertainty in deep learning
-
-In many applications of machine learning and artificial intelligence, it is
-required or beneficial to be able to reason under uncertainty:
-
--   **Bayesian theory sets the "gold standard" for probabilistic decision
-    making**, but can quickly become intractable in large and complex systems
-    with messy data.
--   **Deep learning has shown great success at scaling to large and complex
-    datasets**, but typically focuses on point estimates. Where uncertainty
-    estimates exist they are notoriously unreliable.
-
-**Neural testbed is a framework for evaluating the quality of uncertainty
-estimates in deep learning**. The goal is to provide a reliable and
-coherent evaluation framework that accelarate the development of
-computationaltools for approximate Bayesian inference that leverage some of the
-strengths of deep learning.
-
-You can see the current leaderboard at [leaderboard].
-
-### What is the Neural Testbed?
-
-The Neural Testbed is a carefully-selected collection of supervised learning
+The Neural Testbed consists of a carefully-selected collection of synthetic supervised learning
 tasks, where we can compare the quality of a learned (usually neural network)
 posterior against a reference posterior.
-
 The generative model is based around a random 2-layer MLP. Since independent
 data can be generated for each execution, the Testbed can drive insight and
 multiple iterations of algorithm development without risk of overfitting to a
-fixed dataset.  This repository also includes the implementation of a
+fixed dataset.
+
+This repository also includes the implementation of a
 comprehensive set of benchmark agents and their performance on the testbed. In
 addition, we provide utilities for evaluating the agents on real dataset where
-the estimate of the cross-entropy loss on the test data is taken to be the
-sample mean of the negative log-likelihoods.
+the estimate of the cross-entropy loss on the test data, i.e.,
+sample mean of the negative log-likelihoods is reported as the metric.
+
 
 For more information see our [paper]
 
 ## How do I get started?
 
-The Neural Testbed has a very simple interface, specified in
+A great starting point is running any of the included agents on a task:
+
+```bash
+python -m neural_testbed.experiments.enn.run
+```
+You can control the agent and the task using the flags in this file.
+
+The agent implementations are in the `agents/factories/` package. Each agent
+implementation also includes a config definition that specifies the
+hyperparameters of that agent and a set of *sweeps* that represents
+hyperparameter sweeps used to optimize the performance of the agent.
+
+In order to evaluate a new agent on the testbed you need to define your own `TestbedAgent` that implementes the interface, specified in
 [base.py](https://github.com/deepmind/neural_testbed/base.py):
 
 ```python
@@ -70,14 +64,15 @@ class TestbedAgent(typing_extensions.Protocol):
     """Sets up a training procedure given ENN prior knowledge."""
 ```
 
-In order to submit to the testbed you need to define your own `TestbedAgent`: a
-function taking training data and optional prior knowledge and outputting an
+A `TestbedAgent` is a function taking training data and optional prior knowledge
+and outputting an
 `EpistemicSampler`. The `EpistemicSampler` outputs an approximate posterior
 sample for the unknown function `f` at a given `x`, for a given random `key`.
 Given a `TestbedAgent` the `neural_testbed` will handle everything else and
 output a performance measure for the quality of the uncertainty estimation of
 the agent. It can also evaluate the agent on real dataset by estimating the test
 cross-entropy loss.
+
 
 
 ### Installation
