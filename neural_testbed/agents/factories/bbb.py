@@ -83,7 +83,7 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
 
     if config.adaptive_scale:
       single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn,
-                                    prior.temperature)
+                                    prior.temperature, prior.input_dim)
     else:
       single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn)
 
