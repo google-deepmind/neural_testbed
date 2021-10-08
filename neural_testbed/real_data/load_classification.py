@@ -127,7 +127,7 @@ def load(dataset_info: datasets.DatasetInfo,
   """Load a classification problem from a real dataset specified by config."""
   rng = hk.PRNGSequence(999)
   num_enn_samples = 1000  # We set it to the number we use for our testbed
-  num_test_seeds = 1000  # We set it to the number we use for our testbed
+  num_test_seeds = int(max(1000 / tau, 1))  # Match testbed
   train_data = load_dataset(dataset_info=dataset_info, split='train')
   test_data = load_dataset(dataset_info=dataset_info, split='test')
 

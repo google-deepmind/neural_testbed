@@ -23,14 +23,15 @@ from neural_testbed.real_data import load_classification
 from neural_testbed.real_data import load_regression
 
 
-def problem_from_id(ds_name: str) -> testbed_base.TestbedProblem:
+def problem_from_id(ds_name: str, tau: int = 1) -> testbed_base.TestbedProblem:
   """Load a classification problem from a real dataset specified by config."""
   if ds_name not in datasets.DATASETS_SETTINGS:
     raise ValueError(f'dataset={ds_name} is not supported')
   else:
     dataset_info = datasets.DATASETS_SETTINGS[ds_name]
   if ds_name in datasets.REGRESSION_DATASETS:
+    assert tau == 1, 'High tau not implemented for regression yet.'
     return load_regression.load(dataset_info)
   else:
-    return load_classification.load(dataset_info)
+    return load_classification.load(dataset_info, tau)
 
