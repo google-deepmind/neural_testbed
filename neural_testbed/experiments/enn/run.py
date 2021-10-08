@@ -19,7 +19,6 @@
 
 from absl import app
 from absl import flags
-from ml_collections import config_flags
 from neural_testbed import leaderboard
 from neural_testbed.agents import factories
 from neural_testbed.experiments import experiment
@@ -37,12 +36,14 @@ flags.DEFINE_integer(
 
 FLAGS = flags.FLAGS
 
-# Defining a dummy config_flag in order to handle overflow flags.
-config_flags.DEFINE_config_dict('dummy', factories.dummy_config(), '')
-
 
 def main(_):
+  # Load the problem, i.e., the task, using the string gp_id. All the problems
+  # are defined in `neural_testbed/leaderboard/sweep.py`
   problem = leaderboard.problem_from_id(FLAGS.gp_id)
+
+  # Define the agent. Here we are constructing one of the benchmark agents
+  # implemented in the factories package.
   paper_agent = factories.get_paper_agent(FLAGS.agent_name)
   if FLAGS.sweep_id < 0:
     config = paper_agent.default
@@ -51,6 +52,8 @@ def main(_):
   else:
     config = paper_agent.sweep()[FLAGS.sweep_id]
   agent = paper_agent.ctor(config)
+
+  # Run the experiment!
   experiment.run(agent, problem)
 
 
