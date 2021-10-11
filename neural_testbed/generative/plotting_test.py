@@ -42,28 +42,22 @@ def classification_sampler(x: enn_base.Array,
 
 class PlottingTest(parameterized.TestCase):
 
-  @parameterized.parameters([[x] for x in sweep.CLASSIFICATION_TEST])
-  def test_1d_classification(self, gp_id: str):
-    """Check that the 1d classification plot doesn't fail."""
-    problem = load.problem_from_id(gp_id)
-    _ = plotting.sanity_plots(problem, classification_sampler)
-
   @parameterized.parameters([[x] for x in sweep.CLASSIFICATION_2D_TEST])
-  def test_2d_classification(self, gp_id: str):
+  def test_2d_classification(self, problem_id: str):
     """Check that the 1d classification plot doesn't fail."""
-    problem = load.problem_from_id(gp_id)
+    problem = load.problem_from_id(problem_id)
     _ = plotting.sanity_plots(problem, classification_sampler)
 
   @parameterized.parameters([[x] for x in sweep.REGRESSION_TEST])
-  def test_1d_regression(self, gp_id: str):
+  def test_1d_regression(self, problem_id: str):
     """Check that the 1d regression plot doesn't fail."""
-    problem = load.problem_from_id(gp_id)
+    problem = load.problem_from_id(problem_id)
     _ = plotting.sanity_plots(problem, regression_sampler)
 
   @parameterized.parameters([[x] for x in sweep.ENN_PAPER_TEST])
-  def test_1d_enn_paper(self, gp_id: str):
+  def test_1d_enn_paper(self, problem_id: str):
     """Check that the 1d enn_paper plot doesn't fail."""
-    problem = load.problem_from_id(gp_id)
+    problem = load.problem_from_id(problem_id)
     _ = plotting.sanity_plots(problem, regression_sampler)
 
 if __name__ == '__main__':

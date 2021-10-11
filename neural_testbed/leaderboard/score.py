@@ -56,20 +56,20 @@ class LeaderboardData:
 
 
 def join_metadata(df: pd.DataFrame) -> pd.DataFrame:
-  """Joins data with GP settings based on gp_id."""
-  assert 'gp_id' in df.columns
+  """Joins data with GP settings based on problem_id."""
+  assert 'problem_id' in df.columns
   metadata = copy.deepcopy(sweep.SETTINGS)
 
   data = []
-  for gp_id, problem_config in metadata.items():
-    gp_params = {'gp_id': gp_id}
+  for problem_id, problem_config in metadata.items():
+    gp_params = {'problem_id': problem_id}
     gp_params.update(problem_config.meta_data)
     data.append(gp_params)
   gp_df = pd.DataFrame(data)
 
-  # TODO(author2): Work out how to handle clash between agent sweep and gp_id
-  # e.g. if an agent sweeps over temperature and so does the GP!
-  return pd.merge(df, gp_df, on='gp_id', suffixes=(_AGENT_SUFFIX, ''))
+  # TODO(author2): Work out how to handle clash between agent and problem_id
+  # e.g. if an agent sweeps over temperature and so does the problem!
+  return pd.merge(df, gp_df, on='problem_id', suffixes=(_AGENT_SUFFIX, ''))
 
 
 def _check_drop_duplicate_logs(df: pd.DataFrame,
@@ -77,20 +77,20 @@ def _check_drop_duplicate_logs(df: pd.DataFrame,
   """Check for duplicate logging instances, indicating some kind of error."""
   main_df = df.copy()
 
-  # Count the number of replicas for each gp_id
-  count_df = main_df.groupby(['gp_id']).apply(len)
+  # Count the number of replicas for each problem_id
+  count_df = main_df.groupby(['problem_id']).apply(len)
   count_df = count_df.reset_index().rename({0: 'replicas'}, axis=1)
-  count_df = count_df.drop_duplicates(subset=['gp_id'])
+  count_df = count_df.drop_duplicates(subset=['problem_id'])
   duplicates = count_df[count_df.replicas > 1]
 
-  # If some gp_id have more than one entry --> print a warning message
+  # If some problem_id have more than one entry --> print a warning message
   if len(duplicates) > 0:  # pylint:disable=g-explicit-length-test
     if verbose:
-      print('WARNING: multiple logs per gp_id, selecting first entry.')
+      print('WARNING: multiple logs per problem_id, selecting first entry.')
       print(duplicates.head())
 
-    # Drop duplicate gp_id in case they got logged several times.
-    df = df.drop_duplicates('gp_id')
+    # Drop duplicate problem_id in case they got logged several times.
+    df = df.drop_duplicates('problem_id')
 
   return df
 
@@ -105,7 +105,7 @@ def _clean_single_agent(df_in: pd.DataFrame,
   df = df_in.copy()
   df = join_metadata(df)
   df['raw_kl_estimate'] = df['kl_estimate']
-  gp_ids = df.gp_id.unique()
+  problem_ids = df.problem_id.unique()
 
   # Adding data_ratio as a column to df
   if 'data_ratio' not in df.columns:
@@ -128,27 +128,30 @@ def _clean_single_agent(df_in: pd.DataFrame,
     print('\n' + '+' * 80)
     print(f'Cleaning data for agent = {agent_name}')
 
-  # Drop extra gp_id.
-  extra_ids = [idx for idx in gp_ids if idx not in leaderboard_sweep]
+  # Drop extra problem_id.
+  extra_ids = [idx for idx in problem_ids if idx not in leaderboard_sweep]
   if extra_ids and verbose:
-    print(f'WARNING: agent={agent_name} has {len(extra_ids)} extra gp_ids'
+    print(f'WARNING: agent={agent_name} has {len(extra_ids)} extra problem_ids'
           f' these will be dropped:')
     print(extra_ids)
-    df = df[~df.gp_id.isin(extra_ids)]
+    df = df[~df.problem_id.isin(extra_ids)]
 
   # Check for duplicate logging instances
   # TODO(author3): Reflect duplicate entries in pct_health
   df = _check_drop_duplicate_logs(df, verbose)
 
-  # Fill missing gp_id
-  missing_ids = [idx for idx in leaderboard_sweep if idx not in gp_ids]
+  # Fill missing problem_id
+  missing_ids = [idx for idx in leaderboard_sweep if idx not in problem_ids]
   if missing_ids:
     fill_dict = {
         'agent_name': agent_name,
-        'gp_id': missing_ids,
+        'problem_id': missing_ids,
         'kl_estimate': kl_fill,
     }
-    for col in df.columns:
+    # Don't include the problem_id and kl_estimate columns for missing value.
+    fill_columns = [
+        col for col in df.columns if col not in ['problem_id', 'kl_estimate']]
+    for col in fill_columns:
       # TODO(author2): Sort out unhashable columns...
       try:
         num_unique = len(df[col].unique())
@@ -157,10 +160,13 @@ def _clean_single_agent(df_in: pd.DataFrame,
         num_unique = len(df[col].unique())
       if num_unique == 1:
         fill_dict[col] = df[col].iloc[0]
-    df = pd.concat([df, join_metadata(pd.DataFrame(fill_dict))])
+
+    # TODO(author2): Sort out the merging/filling here... not too safe
+    df = pd.concat([df, pd.DataFrame(fill_dict)])
+    df = join_metadata(df)
     if verbose:
-      print(f'WARNING: agent={agent_name} has {len(missing_ids)} missing gp_ids'
-            f' (these will be filled with {kl_fill}')
+      print(f'WARNING: agent={agent_name} has {len(missing_ids)} missing '
+            f'problem_ids (these will be filled with {kl_fill}')
       print(missing_ids)
 
   # Negative KL estimates
@@ -259,7 +265,7 @@ def _load_single_entry(
 def load_entries(
     leaderboard_entries: Any,  # TODO(author2): sort out this typing.
     entry_loader: logging.EntryLoader,
-    leaderboard_sweep: Sequence[str] = sweep.CLASSIFICATION,
+    leaderboard_sweep: Sequence[str] = sweep.CLASSIFICATION_2D,
     verbose: bool = True,
 ) -> Tuple[Sequence[AgentData], Sequence[str]]:
   """Loads leaderboard entries and outputs a list of cleaned AgentData."""
@@ -301,7 +307,7 @@ def _make_leaderboard_dataframe(
     data.append(agent.df.assign(report_link=agent.report_link))
   df = pd.concat(data)
   df['entry_name'] = df.agent_name.apply(lambda x: x.split(':')[0])
-  df['task'] = df.gp_id.apply(lambda x: x.split('/')[0])
+  df['task'] = df.problem_id.apply(lambda x: x.split('/')[0])
   if sweep_vars:
     for col in sweep_vars:
       try:

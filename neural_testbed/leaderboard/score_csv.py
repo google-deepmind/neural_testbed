@@ -41,9 +41,9 @@ def _load_entry(entry: entries_csv.Entry) -> Tuple[pd.DataFrame, Sequence[str]]:
 
     # Then we will assume that the file is actually a neural testbed result
     df = pd.read_csv(file_path)
-    file_gp_id = name.strip('.csv').split(csv_logger.INITIAL_SEPARATOR)[1]
-    gp_id = file_gp_id.replace(csv_logger.SAFE_SEPARATOR, sweep.SEPARATOR)
-    df['gp_id'] = gp_id
+    file_id = name.strip('.csv').split(csv_logger.INITIAL_SEPARATOR)[1]
+    problem_id = file_id.replace(csv_logger.SAFE_SEPARATOR, sweep.SEPARATOR)
+    df['problem_id'] = problem_id
     df['results_dir'] = results_dir
     data.append(df)
   df = pd.concat(data, sort=False)
@@ -52,7 +52,7 @@ def _load_entry(entry: entries_csv.Entry) -> Tuple[pd.DataFrame, Sequence[str]]:
 
 def load_entries(
     leaderboard_entries: Any,
-    leaderboard_sweep: Sequence[str] = sweep.CLASSIFICATION,
+    leaderboard_sweep: Sequence[str] = sweep.CLASSIFICATION_2D,
     verbose: bool = True,
 ) -> score.LeaderboardData:
   """Loads leaderboard entries and outputs a list of cleaned AgentData."""

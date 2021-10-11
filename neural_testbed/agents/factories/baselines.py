@@ -125,7 +125,7 @@ def make_uniform_class_probs_agent(
       data: testbed_base.Data,
       prior: testbed_base.PriorKnowledge,
   ) -> testbed_base.EpistemicSampler:
-    """Samples uniform."""
+    """Ignores the input and always outputs equal logits for all classes."""
     del data  # data does not affect the baseline agent.
     def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
       del key  # key does not affect the baseline agent.
@@ -148,7 +148,7 @@ def make_average_class_probs_agent(
   def make_agent(
       data: testbed_base.Data,
       prior: testbed_base.PriorKnowledge) -> testbed_base.EpistemicSampler:
-    """Samples base on average class probabilities."""
+    """Calculates the frequency of each class and outputs the class frequency."""
     counts = jnp.array([
         jnp.count_nonzero(data.y == label) for label in range(prior.num_classes)
     ])
@@ -169,7 +169,7 @@ def average_class_probs_paper_agent() -> factories_base.PaperAgent:
 
 def make_prior_agent(
     config: DummyConfig) -> testbed_base.TestbedAgent:
-  """Factory method to create a baseline average class probability agent."""
+  """Factory method to create an agent that uses prior knowledge but ignores data."""
   del config
   def make_agent(
       data: testbed_base.Data,

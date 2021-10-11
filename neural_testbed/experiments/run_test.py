@@ -20,7 +20,7 @@ from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
 from neural_testbed import leaderboard
-from neural_testbed.experiments.enn import run
+from neural_testbed.experiments import run
 
 FLAGS = flags.FLAGS
 
@@ -28,8 +28,8 @@ FLAGS = flags.FLAGS
 class RunTest(parameterized.TestCase):
 
   @parameterized.parameters([[x] for x in leaderboard.CLASSIFICATION_2D_TEST])
-  def test_neural_testbed(self, gp_id: str):
-    FLAGS.gp_id = gp_id
+  def test_neural_testbed(self, problem_id: str):
+    FLAGS.problem_id = problem_id
     FLAGS.num_batches = 2
     run.main(None)
 

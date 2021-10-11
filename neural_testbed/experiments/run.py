@@ -22,10 +22,18 @@ from absl import flags
 from neural_testbed import leaderboard
 from neural_testbed.agents import factories
 from neural_testbed.experiments import experiment
+from neural_testbed.leaderboard import sweep
 
 
-# GP configuration (set --gp_id=manual for override)
-flags.DEFINE_string('gp_id', 'classification_2d/0', 'ID for leaderboard GP.')
+# Option to configue the leaderboard problem instance.
+# To do a *sweep* over all problem_ids pass --problem_id=SWEEP
+flags.DEFINE_string('problem_id', 'classification_2d/0',
+                    'ID for leaderboard GP.')
+
+# Options for logging results to csv for evaluation later.
+flags.DEFINE_string(
+    'results_dir', '/tmp/neural_testbed', 'Where to store results as csv.')
+flags.DEFINE_bool('overwrite_csv', True, 'Whether to overwrite existing csv.')
 
 # Loading agent from factories, #sweep_id config within agent_name sweep
 flags.DEFINE_string('agent_name', 'vanilla_ensemble', 'Agent to load')
@@ -37,10 +45,11 @@ flags.DEFINE_integer(
 FLAGS = flags.FLAGS
 
 
-def main(_):
-  # Load the problem, i.e., the task, using the string gp_id. All the problems
-  # are defined in `neural_testbed/leaderboard/sweep.py`
-  problem = leaderboard.problem_from_id(FLAGS.gp_id)
+def run_single_problem(problem_id: str) -> str:
+  """Evaluates the agent on a single problem instance."""
+  # Load the problem via problem_id.
+  problem = leaderboard.problem_from_id_csv(
+      FLAGS.problem_id, FLAGS.results_dir, FLAGS.overwrite_csv)
 
   # Define the agent. Here we are constructing one of the benchmark agents
   # implemented in the factories package.
@@ -53,8 +62,21 @@ def main(_):
     config = paper_agent.sweep()[FLAGS.sweep_id]
   agent = paper_agent.ctor(config)
 
-  # Run the experiment!
-  experiment.run(agent, problem)
+  # Run the experiment and output the KL score.
+  kl_quality = experiment.run(agent, problem)
+  print(f'kl_quality={kl_quality}, write csv to {FLAGS.results_dir}')
+  return problem_id
+
+
+def main(_):
+  if FLAGS.problem_id == 'SWEEP':
+    # Perform a sweep over all the relevant problem_id for full evaluation.
+    for problem_id in sweep.CLASSIFICATION_2D:
+      run_single_problem(problem_id)
+
+  else:
+    # Run just a single problem_id.
+    run_single_problem(FLAGS.problem_id)
 
 
 if __name__ == '__main__':

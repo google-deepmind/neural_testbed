@@ -30,9 +30,9 @@ class LoadTest(parameterized.TestCase):
       ['classification_2d/10'],
       ['classification_2d/100'],
   ])
-  def test_gp_loading(self, gp_id: str):
-    """Tests you can load from gp_id and data format matches prior."""
-    testbed_problem = load.problem_from_id(gp_id)
+  def test_gp_loading(self, problem_id: str):
+    """Tests you can load from problem_id and data format matches prior."""
+    testbed_problem = load.problem_from_id(problem_id)
     data = testbed_problem.train_data
     prior = testbed_problem.prior_knowledge
     assert data.x.shape == (prior.num_train, prior.input_dim)

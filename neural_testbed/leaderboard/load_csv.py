@@ -15,16 +15,16 @@
 # limitations under the License.
 # ============================================================================
 
-"""Load a gp_id from sweep with CSV logging."""
+"""Load a problem_id from sweep with CSV logging."""
 
 from neural_testbed import base as testbed_base
 from neural_testbed import logging
 from neural_testbed.leaderboard import load
 
 
-def problem_from_id(gp_id: str,
+def problem_from_id(problem_id: str,
                     results_dir: str = '/tmp/neural_testbed',
                     overwrite: bool = False) -> testbed_base.TestbedProblem:
-  """Factory method to load problem from gp_id and wrap it with a csv logger."""
-  problem = load.problem_from_id(gp_id)
-  return logging.wrap_problem_csv(problem, gp_id, results_dir, overwrite)
+  """Factory method to load problem from problem_id and wrap it with a csv logger."""
+  problem = load.problem_from_id(problem_id)
+  return logging.wrap_problem_csv(problem, problem_id, results_dir, overwrite)
