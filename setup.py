@@ -44,7 +44,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'dm-haiku',
-        'dm @ git+https://git@github.com/deepmind/enn',
+        'enn @ git+https://git@github.com/deepmind/enn',
         'absl-py',
         'numpy',
         'pandas',
@@ -52,6 +52,7 @@ setuptools.setup(
         'jax',
         'tensorflow',
         'tensorflow-datasets',
+        'tensorflow-probability',
         'chex',
         'neural-tangents',
         'dataclasses',  # Back-port for Python 3.6.
