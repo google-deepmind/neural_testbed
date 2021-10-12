@@ -49,7 +49,7 @@ def run_single_problem(problem_id: str) -> str:
   """Evaluates the agent on a single problem instance."""
   # Load the problem via problem_id.
   problem = leaderboard.problem_from_id_csv(
-      FLAGS.problem_id, FLAGS.results_dir, FLAGS.overwrite_csv)
+      problem_id, FLAGS.results_dir, FLAGS.overwrite_csv)
 
   # Define the agent. Here we are constructing one of the benchmark agents
   # implemented in the factories package.
