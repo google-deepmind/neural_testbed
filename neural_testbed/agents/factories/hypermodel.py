@@ -111,7 +111,7 @@ def make_hypermodel_agent(
 def l2reg_sweep() -> Sequence[HypermodelConfig]:
   """Generates the hypermodel sweep over l2 regularization parameters for paper."""
   sweep = []
-  for l2_weight_decay in [1, 2, 3, 10]:
+  for l2_weight_decay in [0.1, 0.3, 1, 3, 10]:
     sweep.append(HypermodelConfig(l2_weight_decay=l2_weight_decay))
   return tuple(sweep)
 
@@ -135,7 +135,7 @@ def boot_sweep() -> Sequence[HypermodelConfig]:
 def prior_sweep() -> Sequence[HypermodelConfig]:
   """Generates the hypermodel sweep over prior function parameters for paper."""
   sweep = []
-  for prior_scale in [1, 10]:
+  for prior_scale in [0, 1]:
     for prior_hidden_sizes in [(10,), (10, 10)]:
       for l2_weight_decay in [1, 2]:
         for temp_scale_prior in ['lin', 'sqrt']:

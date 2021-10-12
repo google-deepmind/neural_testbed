@@ -38,7 +38,7 @@ class McDropoutConfig:
   dropout_input: bool = False  # Whether to have dropout for the input layer
   exclude_bias_l2: bool = False  # Whether to exclude bias from regularization
   adaptive_weight_scale: bool = True  # Whether to scale with prior
-  hidden_sizes: Sequence[int] = (100, 100)  # Hidden sizes for neural network
+  hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for neural network
   num_batches: int = 1000  # Number of SGD steps
   learning_rate: float = 1e-3  # Learning rate for adam optimizer
   seed: int = 0  # Initialization seed
@@ -110,7 +110,7 @@ def l2reg_sweep() -> Sequence[McDropoutConfig]:
   """Generates the dropout sweep over l2 regularization parameters for paper."""
   sweep = []
   for adaptive_weight_scale in [True, False]:
-    for length_scale in [1, 3, 10]:
+    for length_scale in [0.01, 0.1, 0.3, 1, 3, 10]:
       sweep.append(
           McDropoutConfig(
               adaptive_weight_scale=adaptive_weight_scale,

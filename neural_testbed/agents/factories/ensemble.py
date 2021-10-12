@@ -30,7 +30,7 @@ import numpy as np
 
 @dataclasses.dataclass
 class VanillaEnsembleConfig:
-  num_ensemble: int = 3  # Size of ensemble
+  num_ensemble: int = 100  # Size of ensemble
   l2_weight_decay: float = 1.  # Weight decay
   adaptive_weight_scale: bool = True  # Whether to scale with prior
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
