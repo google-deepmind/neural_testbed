@@ -50,6 +50,7 @@ setuptools.setup(
         'pandas',
         'jaxlib',
         'jax',
+        'ml_collections',
         'tensorflow',
         'tensorflow-datasets',
         'tensorflow-probability',
