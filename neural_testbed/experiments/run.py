@@ -22,8 +22,8 @@ from absl import flags
 from neural_testbed import leaderboard
 from neural_testbed.agents import factories
 from neural_testbed.experiments import experiment
+from neural_testbed.experiments import pool
 from neural_testbed.leaderboard import sweep
-
 
 # Option to configue the leaderboard problem instance.
 # To do a *sweep* over all problem_ids pass --problem_id=SWEEP
@@ -36,7 +36,7 @@ flags.DEFINE_string(
 flags.DEFINE_bool('overwrite_csv', True, 'Whether to overwrite existing csv.')
 
 # Loading agent from factories, #sweep_id config within agent_name sweep
-flags.DEFINE_string('agent_name', 'vanilla_ensemble', 'Agent to load')
+flags.DEFINE_string('agent_name', 'mlp', 'Agent to load')
 flags.DEFINE_integer('sweep_id', -1, 'Agent within sweep, <0 gives default.')
 flags.DEFINE_integer(
     'num_batches', -1,
@@ -71,8 +71,7 @@ def run_single_problem(problem_id: str) -> str:
 def main(_):
   if FLAGS.problem_id == 'SWEEP':
     # Perform a sweep over all the relevant problem_id for full evaluation.
-    for problem_id in sweep.CLASSIFICATION_2D:
-      run_single_problem(problem_id)
+    pool.map_mpi(run_single_problem, sweep.CLASSIFICATION_2D)
 
   else:
     # Run just a single problem_id.

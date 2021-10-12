@@ -95,6 +95,13 @@ def _check_drop_duplicate_logs(df: pd.DataFrame,
   return df
 
 
+def _fix_legacy_problem_id(df: pd.DataFrame) -> pd.DataFrame:
+  # TODO(author2): remove need for this fix after renaming gp_id -> problem_id.
+  if 'gp_id' in df.columns and 'problem_id' not in df.columns:
+    df['problem_id'] = df['gp_id']
+  return df
+
+
 def _clean_single_agent(df_in: pd.DataFrame,
                         leaderboard_sweep: Sequence[str],
                         agent_name: str = 'agent',
@@ -103,6 +110,7 @@ def _clean_single_agent(df_in: pd.DataFrame,
                         verbose: bool = True) -> AgentData:
   """Validates and cleans the submission for a single agent."""
   df = df_in.copy()
+  df = _fix_legacy_problem_id(df)
   df = join_metadata(df)
   df['raw_kl_estimate'] = df['kl_estimate']
   problem_ids = df.problem_id.unique()

@@ -16,7 +16,7 @@
 # ============================================================================
 
 """Exposing the public methods of leaderboard."""
-from neural_testbed.leaderboard.entries_csv import Entry as Entry_csv
+from neural_testbed.leaderboard.entries_csv import Entry
 # Leaderboard loading of testbed problem
 # from neural_testbed.leaderboard.load import classification_load
 from neural_testbed.leaderboard.load import gaussian_data

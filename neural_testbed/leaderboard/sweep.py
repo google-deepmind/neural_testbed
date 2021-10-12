@@ -79,9 +79,9 @@ def regression_sweep(num_seed: int = 10,
               num_classes=1,  # Currently fixed and not part of the configs.
               tau=1,  # Currently regression only supports tau=1
               layers=1,
-              )
-          configs.append(ProblemConfig(prior_knowledge, seed,
-                                       num_enn_samples=100))
+          )
+          configs.append(
+              ProblemConfig(prior_knowledge, seed, num_enn_samples=100))
   return {f'regression{SEPARATOR}{i}': v for i, v in enumerate(configs)}
 
 
@@ -123,7 +123,7 @@ def classification_2d_sweep(num_seed: int = 10,
               tau=tau,
               layers=2,
               temperature=temperature,
-              )
+          )
 
           configs.append(ProblemConfig(prior_knowledge, seed))
   return {f'classification_2d{SEPARATOR}{i}': v
@@ -136,7 +136,6 @@ def classification_2d_test_sweep() -> Dict[str, ProblemConfig]:
   configs = _filter_unique_configs(
       full_configs,
       lambda x: ((x.prior_knowledge.temperature == 0.01)  # pylint: disable=g-long-lambda
-                 and (x.prior_knowledge.num_train == 10)
                  and (x.prior_knowledge.tau == 1))
       )
   return {f'classification_2d_test{SEPARATOR}{i}':

@@ -16,7 +16,7 @@ This library automates the evaluation and analysis of learning agents:
 - Evaluate predictions beyond marginal distributions.
 - Reference implementations of benchmark agents (with tuning).
 
-For a more comprehensive overview, see the accompanying [paper](paper link).
+For a more comprehensive overview, see the accompanying [paper](https://arxiv.org/abs/2110.04629).
 
 
 ## Technical overview
@@ -27,7 +27,7 @@ We outline the key high-level interfaces for our code in [base.py](neural_testbe
 - `TestbedAgent`: Given data, prior_knowledge outputs an EpistemicSampler.
 - `TestbedProblem`: Reveals training_data, prior_knowledge. Can evaluate the quality of an EpistemicSampler.
 
-If you want to evaluate your algorithm on the testbed, you simply need to define your `TestbedAgent` and then run it on our [experiment.py](neural_testbed/experiment/experiment.py)
+If you want to evaluate your algorithm on the testbed, you simply need to define your `TestbedAgent` and then run it on our [experiment.py](neural_testbed/experiments/experiment.py)
 
 ```python
 def run(agent: testbed_base.TestbedAgent,
@@ -82,11 +82,11 @@ In addition to our testbed code, we release a collection of benchmark agents.
 These include the full sets of hyperparameter sweeps necessary to reproduce the paper's results, and can serve as a great starting point for new research.
 You can have a look at these implementations in the [`agents/factories/`](neural_testbed/agents/factories) folder.
 
-We recommended you get started with our [colab tutorial].
+We recommended you get started with our [colab tutorial](https://colab.research.google.com/github/deepmind/neural_testbed/blob/master/neural_testbed/tutorial.ipynb).
 After [intallation](#installation) you can also run an agent directly by executing the following command from the main directory of `neural_testbed`:
 
 ```bash
-python -m neural_testbed.experiments.run --agent_name=ensemble_plus
+python -m neural_testbed.experiments.run --agent_name=mlp
 ```
 
 By default, this will save the results for that agent to csv at `/tmp/neural_testbed`.
@@ -96,7 +96,7 @@ In particular, you can run the agent on the whole sweep of tasks in the Neural T
 
 ## Citing
 
-If you use `neural_testbed` in your work, please cite the accompanying [paper]:
+If you use `neural_testbed` in your work, please cite the accompanying [paper](https://arxiv.org/abs/2110.04629):
 
 ```bibtex
 @misc{osband2021evaluating,
