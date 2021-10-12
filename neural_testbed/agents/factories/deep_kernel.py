@@ -30,10 +30,12 @@ This works as follows:
 """
 
 import dataclasses
-from typing import Callable, Iterable, Optional, Sequence
+import functools
+from typing import Callable, Iterable, NamedTuple, Optional, Sequence
 
 import chex
 from enn import base as enn_base
+from enn import losses
 from enn import utils
 import haiku as hk
 import jax
@@ -54,17 +56,21 @@ class Normalization:
 @dataclasses.dataclass
 class DeepKernelConfig:
   """Deep kernel config."""
-  num_train_steps: int = 1_000
+  num_train_steps: int = 1_000  # number of training steps
+  batch_size: int = 100  # batch size to train with
+  learning_rate: float = 1e-3  # training learning rate
+  weight_decay: float = 1.0  # l2 weight decay
   hidden_sizes: Sequence[int] = (50, 50)  # num_features is hidden_sizes[-1]
-  batch_size: int = 100
-  weight_decay: float = 1.0
-  num_inference_samples: int = 32_768
-  sigma_squared_factor: float = 1.0
-  scale_factor: float = 10.0
-  learning_rate: float = 1e-3
-  dropout_rate: Optional[float] = None
-  seed: int = 0  # Initialization seed
-  normalization: int = Normalization.during_training
+  scale_factor: float = 10.0  # sampling scale factor
+  num_inference_samples: int = 32_768  # max number of train data to use
+  sigma_squared_factor: float = 1.0  # noise factor
+  seed: int = 0  # initialization seed
+  normalization: int = Normalization.during_training  # normalize final layer
+
+
+class TrainingState(NamedTuple):
+  params: hk.Params
+  opt_state: optax.OptState
 
 
 class MlpWithActivations(hk.Module):
@@ -73,11 +79,7 @@ class MlpWithActivations(hk.Module):
   def __init__(
       self,
       output_sizes: Iterable[int],
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
-      with_bias: bool = True,
       activation: Callable[[jnp.ndarray], jnp.ndarray] = jax.nn.relu,
-      activate_final: bool = False,
       normalize_final: int = Normalization.during_training,
       name: Optional[str] = None,
   ):
@@ -85,13 +87,8 @@ class MlpWithActivations(hk.Module):
 
     Args:
       output_sizes: Sequence of layer sizes.
-      w_init: Initializer for :class:`~haiku.Linear` weights.
-      b_init: Initializer for :class:`~haiku.Linear` bias. Must be ``None`` if
-        ``with_bias=False``.
-      with_bias: Whether or not to apply a bias in each layer.
       activation: Activation function to apply between :class:`~haiku.Linear`
         layers. Defaults to ReLU.
-      activate_final: Whether or not to activate the final layer of the MLP.
       normalize_final: How to normalize the activations of the penultimate
         layer.
       name: Optional name for this module.
@@ -99,71 +96,45 @@ class MlpWithActivations(hk.Module):
     Raises:
       ValueError: If ``with_bias`` is ``False`` and ``b_init`` is not ``None``.
     """
-    if not with_bias and b_init is not None:
-      raise ValueError('When with_bias=False b_init must not be set.')
 
     super().__init__(name=name)
-    self.with_bias = with_bias
-    self.w_init = w_init
-    self.b_init = b_init
     self.activation = activation
-    self.activate_final = activate_final
     self.normalize_final = normalize_final
     layers = []
     for index, output_size in enumerate(output_sizes):
       layers.append(
-          hk.Linear(
-              output_size=output_size,
-              w_init=w_init,
-              b_init=b_init,
-              with_bias=with_bias,
-              name='linear_%d' % index))
+          hk.Linear(output_size=output_size, name='linear_%d' % index))
     self.layers = tuple(layers)
 
   def __call__(
       self,
       inputs: jnp.ndarray,
-      dropout_rate: Optional[float] = None,
-      rng=None,
   ) -> jnp.ndarray:
     """Connects the module to some inputs.
 
     Args:
       inputs: A Tensor of shape ``[batch_size, input_size]``.
-      dropout_rate: Optional dropout rate.
-      rng: Optional RNG key. Require when using dropout.
 
     Returns:
       The output of the model of size ``[batch_size, output_size]``.
     """
-    if dropout_rate is not None and rng is None:
-      raise ValueError('When using dropout an rng key must be passed.')
-
-    rng = hk.PRNGSequence(rng) if rng is not None else None
     num_layers = len(self.layers)
-
-    out = inputs
+    out = hk.Flatten()(inputs)
     for i, layer in enumerate(self.layers):
-      # final layer:
-      if i == (num_layers - 1):
-        # normalize since we use this in inference
+      if i == (num_layers - 1):  # this is the final layer, apply normalization:
         if self.normalize_final == Normalization.during_training:
           out /= (1e-6 + jnp.expand_dims(jnp.linalg.norm(out, axis=1), 1))
           penultimate_out = out
         elif self.normalize_final == Normalization.only_output:
-          penultimate_out = out
-          penultimate_out /= (1e-6 +
-                              jnp.expand_dims(jnp.linalg.norm(out, axis=1), 1))
+          penultimate_out = out / (
+              1e-6 + jnp.expand_dims(jnp.linalg.norm(out, axis=1), 1))
         elif self.normalize_final == Normalization.no_normalization:
           penultimate_out = out
         else:
           raise ValueError('Invalid normalize_final setting')
 
       out = layer(out)
-      if i < (num_layers - 1) or self.activate_final:
-        # Only perform dropout if we are activating the output.
-        if dropout_rate is not None:
-          out = hk.dropout(next(rng), dropout_rate, out)
+      if i < (num_layers - 1):  # don't activate final layer
         out = self.activation(out)
 
     return (out, penultimate_out)
@@ -177,6 +148,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
       prior: testbed_base.PriorKnowledge,
   ) -> testbed_base.EpistemicSampler:
     """Output uniform class probabilities."""
+    rng = hk.PRNGSequence(config.seed)
 
     enn_data = enn_base.Batch(data.x, data.y)
     dataset = utils.make_batch_iterator(enn_data, config.batch_size,
@@ -185,39 +157,47 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
     def predict_fn(x):
       model = MlpWithActivations(
           output_sizes=list(config.hidden_sizes) + [prior.num_classes],
-          activate_final=False,
           normalize_final=config.normalization)
-      logits, final_layer_activations = model(
-          x, dropout_rate=config.dropout_rate, rng=hk.next_rng_key())
+      logits, final_layer_activations = model(x)
       return (logits, final_layer_activations)
 
-    def loss_fn(x, y):
-      logits, _ = predict_fn(x)
-      y_onehot = jax.nn.one_hot(jnp.squeeze(y, axis=-1), prior.num_classes)
-      return jnp.mean(optax.softmax_cross_entropy(logits, y_onehot))
+    predict_fn_t = hk.without_apply_rng(hk.transform(predict_fn))
+    params = predict_fn_t.init(next(rng), next(dataset).x)
 
-    rng = hk.PRNGSequence(config.seed)
-    loss_fn_t = hk.transform(loss_fn)
-    predict_fn_t = hk.transform(predict_fn)
-
-    batch = next(dataset)
-    params = loss_fn_t.init(next(rng), batch.x, batch.y)
+    # helper function to conform to testbed api
+    def net(params, x, index):
+      del index
+      logits, _ = predict_fn_t.apply(params, x)
+      return logits
 
     # use the same weight_decay heuristic as other agents
-    weight_decay = config.weight_decay * jnp.sqrt(prior.temperature)
-    optimizer = optax.adamw(config.learning_rate, weight_decay=weight_decay)
+    weight_decay = (
+        config.weight_decay * jnp.sqrt(prior.temperature) * prior.input_dim /
+        prior.num_train)
+
+    single_loss = losses.combine_single_index_losses_as_metric(
+        # This is the loss you are training on.
+        train_loss=losses.XentLoss(prior.num_classes),
+        # We will also log the accuracy in classification.
+        extra_losses={'acc': losses.AccuracyErrorLoss(prior.num_classes)},
+    )
+    loss_fn = losses.add_l2_weight_decay(single_loss, scale=weight_decay)
+    loss_fn = jax.jit(functools.partial(loss_fn, net))
+
+    optimizer = optax.adam(config.learning_rate)
     opt_state = optimizer.init(params)
 
-    def train_step(params, opt_state, rng, x, y):
-      grads = jax.grad(loss_fn_t.apply)(params, rng, x, y)
-      updates, opt_state = optimizer.update(grads, opt_state, params)
-      params = optax.apply_updates(params, updates)
-      return params, opt_state
+    def train_step(state, batch):
+      _, grads = jax.value_and_grad(
+          loss_fn, has_aux=True)(state.params, batch, None)
+      updates, new_opt_state = optimizer.update(grads, state.opt_state)
+      new_params = optax.apply_updates(state.params, updates)
+      return TrainingState(new_params, new_opt_state)
 
+    state = TrainingState(params, opt_state)
     for _ in range(config.num_train_steps):
       batch = next(dataset)
-      params, opt_state = train_step(params, opt_state, next(rng), batch.x,
-                                     batch.y)
+      state = train_step(state, batch)
 
     ##### prepare Cholesky factor #####
 
@@ -228,7 +208,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
     # B_train -> num_inference_samples
     d = utils.make_batch_iterator(enn_data, num_inference_samples, config.seed)
     # phi_x [B_train, num_features] (training data)
-    _, phi_x = predict_fn_t.apply(params, next(rng), next(d).x)
+    _, phi_x = predict_fn_t.apply(state.params, next(d).x)
 
     # at high temperature there is higher sampling noise
     sigma_squared = config.sigma_squared_factor * prior.temperature
@@ -238,10 +218,10 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
 
     ##### Cholesky factor ready #####
 
-    def enn_sampler(s: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
+    def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
       # phi_s [B_test, num_features] (test data)
       rng = hk.PRNGSequence(key)
-      mean_s, phi_s = predict_fn_t.apply(params, next(rng), s)
+      mean_s, phi_s = predict_fn_t.apply(state.params, x)
 
       # [num_features, num_classes]
       sample = jax.random.normal(
@@ -265,9 +245,9 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
 def deep_kernel_sweep() -> Sequence[DeepKernelConfig]:
   """Basic sweep over hyperparams."""
   sweep = []
-  for scale_factor in [0., 1., 10., 100.]:
-    for sigma_squared_factor in [1e-1, 1, 10]:
-      for weight_decay in [1e-2, 1e-1, 1, 10, 100]:
+  for scale_factor in [1e-3, 1e-2, 1., 10., 100.]:
+    for sigma_squared_factor in [1e-2, 1e-1, 1., 10., 100.]:
+      for weight_decay in [1e-6, 1e-5, 1e-4, 1.,]:
         sweep.append(
             DeepKernelConfig(
                 scale_factor=scale_factor,
