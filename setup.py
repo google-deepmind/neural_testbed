@@ -44,7 +44,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'dm-haiku',
-        'dm-enn @ git+https://git@github.com/deepmind/enn',
+        'dm @ git+https://git@github.com/deepmind/enn',
         'absl-py',
         'numpy',
         'pandas',
