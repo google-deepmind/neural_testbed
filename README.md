@@ -1,14 +1,14 @@
 # The Neural Testbed
 
+![Neural Testbed Logo](statics/images/neural_testbed_logo.png)
+
+## What is The Neural Testbeed
 The Neural Testbed is a framework for assessing and comparing performance of
 uncertainty estimators, i.e., models that output posterior predictive
 distributions rather than a point estimate. We call such models an agent. The
 Testbed implements synthetic data generating processes and streamlines the
 process of sampling data, training agents, and evaluating test performance by
-estimating KL-loss for marginal and high-order joint predictions. The goal is to
-provide a reliable and coherent evaluation framework that accelarate the
-development of computational tools for approximate Bayesian inference that
-leverage some of the strengths of deep learning.
+estimating KL-loss for marginal and *high-order joint* predictions.
 
 The Neural Testbed consists of a carefully-selected collection of synthetic supervised learning
 tasks, where we can compare the quality of a learned (usually neural network)
@@ -17,6 +17,11 @@ The generative model is based around a random 2-layer MLP. Since independent
 data can be generated for each execution, the Testbed can drive insight and
 multiple iterations of algorithm development without risk of overfitting to a
 fixed dataset.
+
+
+The goal is to provide a reliable and coherent evaluation framework that accelarate the
+development of computational tools for approximate Bayesian inference that
+leverage some of the strengths of deep learning.
 
 This repository also includes the implementation of a
 comprehensive set of benchmark agents and their performance on the testbed. In
@@ -29,20 +34,23 @@ For more information see our [paper]
 
 ## How do I get started?
 
-A great starting point is running any of the included agents on a task:
+A great starting point is the [tutorial] colab. The colab is extensively documented and allows running the code without installing anything locally.
+You can also run any of the included agents on a task on a local machine after [installing](#installation) the package:
 
 ```bash
 python -m neural_testbed.experiments.enn.run
 ```
 You can control the agent and the task using the flags in this file.
 
-The agent implementations are in the `agents/factories/` package. Each agent
+The agent implementations are in the [`agents/factories/`](neural_testbed/agents/factories) package. Each agent
 implementation also includes a config definition that specifies the
 hyperparameters of that agent and a set of *sweeps* that represents
 hyperparameter sweeps used to optimize the performance of the agent.
 
+## Evaluating a new agent
+
 In order to evaluate a new agent on the testbed you need to define your own `TestbedAgent` that implementes the interface, specified in
-[base.py](https://github.com/deepmind/neural_testbed/base.py):
+[base.py](neural_testbed/base.py):
 
 ```python
 class EpistemicSampler(typing_extensions.Protocol):
@@ -115,4 +123,5 @@ If you use `neural_testbed` in your work, please cite the accompanying [paper]:
 
 
 [paper]:https://arxiv.org/
-[leaderboard]: https://colab.research.google.com/github/deepmind/neural_testbed/blob/master/leaderboard/neural_testbed.ipynb
+[tutorial]: https://colab.research.google.com/github/deepmind/neural_testbed/blob/master/neural_testbed/reports/tutorial.ipynb
+
