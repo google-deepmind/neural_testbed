@@ -23,7 +23,7 @@ from typing import Callable, Dict, List, Sequence
 from neural_testbed import base
 
 
-# gp_ids are strings of the form {sweep_name}{SEPARATOR}{index}.
+# problem_ids are strings of the form {sweep_name}{SEPARATOR}{index}.
 SEPARATOR = '/'
 # DataFrame results are saved to this name in the log.
 DATAFRAME = 'neural_testbed_5'
@@ -52,62 +52,6 @@ class ProblemConfig:
     return meta
 
 
-def classification_sweep(num_seed: int = 10,
-                         initial_seed: int = 0) -> Dict[str, ProblemConfig]:
-  """Generate hyperparameter sweep for classification.
-
-  Args:
-    num_seed: number of seeds per configuratioon of other hyperparameters.
-    initial_seed: initial value of the seed.
-  Returns:
-    Mapping gp_id: gp_settings (for use in gp_load).
-  """
-  configs = []
-  # TODO(author2): convert to itertools
-  seed = initial_seed
-  for input_dim in [1, 10, 100]:
-    for data_ratio in [1, 10, 100, 1000]:
-      for temperature in [0.1, 0.3, 1]:
-        for unused_seed_inc in range(num_seed):
-          for tau in [1, 100]:
-            seed += 1
-
-            num_train = int(data_ratio * input_dim)
-            prior_knowledge = base.PriorKnowledge(
-                input_dim=input_dim,
-                num_train=num_train,
-                num_classes=2,  # Currently fixed and not part of the configs.
-                tau=tau,
-                layers=2,
-                temperature=temperature,
-                )
-
-            configs.append(ProblemConfig(prior_knowledge, seed))
-  return {f'classification{SEPARATOR}{i}': v
-          for i, v in enumerate(configs)}
-
-
-def classification_light_sweep() -> Dict[str, ProblemConfig]:
-  """Reduced num seed for agent hyperparameter optimization classification."""
-  configs = list(classification_sweep(num_seed=3).values())
-  return {f'classification_light{SEPARATOR}{i}':
-              v for i, v in enumerate(configs)}
-
-
-def classification_test_sweep() -> Dict[str, ProblemConfig]:
-  """Reduced sweep for testing classification."""
-  full_configs = list(classification_sweep(num_seed=1).values())
-  configs = _filter_unique_configs(
-      full_configs,
-      lambda x: ((x.prior_knowledge.temperature == 0.1)  # pylint: disable=g-long-lambda
-                 and (x.prior_knowledge.input_dim == 10)
-                 and (x.prior_knowledge.num_train == 10)
-                 and (x.prior_knowledge.tau == 1))
-      )
-  return {f'classification_test{SEPARATOR}{i}':
-              v for i, v in enumerate(configs)}
-
-
 def regression_sweep(num_seed: int = 10,
                      initial_seed: int = 0) -> Dict[str, ProblemConfig]:
   """Generate hyperparameter sweep for regression.
@@ -116,7 +60,7 @@ def regression_sweep(num_seed: int = 10,
     num_seed: number of seeds per configuratioon of other hyperparameters.
     initial_seed: initial value of the seed.
   Returns:
-    Mapping gp_id: gp_settings (for use in gp_load).
+    Mapping problem_id: gp_settings (for use in gp_load).
   """
 
   configs = []
@@ -161,7 +105,7 @@ def classification_2d_sweep(num_seed: int = 10,
     num_seed: number of seeds per configuratioon of other hyperparameters.
     initial_seed: initial value of the seed.
   Returns:
-    Mapping gp_id: gp_settings (for use in gp_load).
+    Mapping problem_id: gp_settings (for use in gp_load).
   """
   configs = []
   # TODO(author2): convert to itertools
@@ -248,9 +192,6 @@ def _filter_unique_configs(
 
 
 SETTINGS = {
-    **classification_sweep(),
-    **classification_light_sweep(),
-    **classification_test_sweep(),
     **regression_sweep(),
     **regression_test_sweep(),
     **enn_paper_sweep(),
@@ -258,9 +199,6 @@ SETTINGS = {
     **classification_2d_sweep(),
     **classification_2d_test_sweep(),
     **classification_2d_light_sweep(),}
-CLASSIFICATION = tuple(classification_sweep().keys())
-CLASSIFICATION_LIGHT = tuple(classification_light_sweep().keys())
-CLASSIFICATION_TEST = tuple(classification_test_sweep().keys())
 REGRESSION = tuple(regression_sweep().keys())
 REGRESSION_TEST = tuple(regression_test_sweep().keys())
 ENN_PAPER = tuple(enn_paper_sweep().keys())

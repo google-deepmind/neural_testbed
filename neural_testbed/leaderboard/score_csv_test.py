@@ -31,9 +31,9 @@ from neural_testbed.logging import csv_logger
 FLAGS = flags.FLAGS
 
 
-def log_fake_results(gp_id: str, results_dir: str) -> None:
+def log_fake_results(problem_id: str, results_dir: str) -> None:
   """Populate a fake set of results."""
-  logger = csv_logger.Logger(gp_id, results_dir)
+  logger = csv_logger.Logger(problem_id, results_dir)
   logger.write({
       'kl_estimate': 10.,
       'total_seconds': 2.,
@@ -53,8 +53,8 @@ class ScoreCsvTest(parameterized.TestCase):
       flags.FLAGS(sys.argv)
     results_dir = self.create_tempdir().full_path
 
-    for gp_id in sweep.CLASSIFICATION[:10]:
-      log_fake_results(gp_id=gp_id, results_dir=results_dir)
+    for problem_id in sweep.CLASSIFICATION_2D[:10]:
+      log_fake_results(problem_id=problem_id, results_dir=results_dir)
 
     # Make a fake entry with this given name, and load it back in.
     entry = entries_csv.Entry(name, results_dir)
@@ -67,9 +67,9 @@ class ScoreCsvTest(parameterized.TestCase):
     # Check that the agent name has been passed through
     self.assertIn(name, data.names, 'the agent name has been passed through.')
 
-    # Check that sweep metadata is joined correctly on gp_id
-    self.assertIn('gp_id', data.df.columns,
-                  'sweep metadata is not joined correctly on gp_id.')
+    # Check that sweep metadata is joined correctly on problem_id
+    self.assertIn('problem_id', data.df.columns,
+                  'sweep metadata is not joined correctly on problem_id.')
 
     # Check that we only loaded one agent
     self.assertLen(data.agents, 1)

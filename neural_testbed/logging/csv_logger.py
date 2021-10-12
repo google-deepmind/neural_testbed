@@ -27,22 +27,22 @@ import pandas as pd
 
 SAFE_SEPARATOR = '-'
 INITIAL_SEPARATOR = '_-_'
-GP_PREFIX = 'gp_id' + INITIAL_SEPARATOR
+GP_PREFIX = 'problem_id' + INITIAL_SEPARATOR
 
 
 def wrap_problem(problem: testbed_base.TestbedProblem,
-                 gp_id: str,
+                 problem_id: str,
                  results_dir: str,
                  overwrite: bool = False) -> testbed_base.TestbedProblem:
-  logger = Logger(gp_id, results_dir, overwrite)
+  logger = Logger(problem_id, results_dir, overwrite)
   return logging_base.LoggingWrapper(problem, logger)
 
 
 class Logger(logging_base.Logger):
   """Saves data to a CSV file via Pandas.
 
-  In this simplified logger, each gp_id logs to a unique CSV index by
-  gp_id. These are saved to a single results_dir by experiment.
+  In this simplified logger, each problem_id logs to a unique CSV index by
+  problem_id. These are saved to a single results_dir by experiment.
   We strongly suggest that you use a *fresh* folder for each testbed run.
 
   This logger, along with the corresponding load functionality, serves as a
@@ -51,7 +51,7 @@ class Logger(logging_base.Logger):
   """
 
   def __init__(self,
-               gp_id: str,
+               problem_id: str,
                results_dir: str = '/tmp/neural_testbed',
                overwrite: bool = False):
     """Initializes a new CSV logger."""
@@ -63,8 +63,8 @@ class Logger(logging_base.Logger):
         pass
 
     # The default '/' symbol is dangerous for file systems!
-    safe_gp_id = gp_id.replace(sweep.SEPARATOR, SAFE_SEPARATOR)
-    filename = f'{GP_PREFIX}{safe_gp_id}.csv'
+    safe_problem_id = problem_id.replace(sweep.SEPARATOR, SAFE_SEPARATOR)
+    filename = f'{GP_PREFIX}{safe_problem_id}.csv'
     save_path = os.path.join(results_dir, filename)
 
     if os.path.exists(save_path) and not overwrite:
