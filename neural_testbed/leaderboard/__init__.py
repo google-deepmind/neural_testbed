@@ -27,6 +27,8 @@ from neural_testbed.leaderboard.load import problem_from_id
 # from neural_testbed.leaderboard.load import RegressionTestbedConfig
 from neural_testbed.leaderboard.load_csv import problem_from_id as problem_from_id_csv
 
+# Leaderboard table
+from neural_testbed.leaderboard.plotting import display_ranking_df
 
 # Leaderboard scoring of experiments
 from neural_testbed.leaderboard.score import AgentData
@@ -45,4 +47,3 @@ from neural_testbed.leaderboard.sweep import ProblemConfig
 from neural_testbed.leaderboard.sweep import REGRESSION
 from neural_testbed.leaderboard.sweep import REGRESSION_TEST
 from neural_testbed.leaderboard.sweep import SETTINGS
-
