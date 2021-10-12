@@ -66,10 +66,12 @@ We have tested `neural_testbed` on Python 3.7. To install the dependencies:
 2.  Install `neural_testbed` directly from [github](https://github.com/deepmind/neural_testbed):
 
     ```bash
-    pip install git+https://github.com/deepmind/neural_testbed
+    git clone https://github.com/deepmind/neural_testbed.git
+    cd neural_testbed
+    pip install .
     ```
 
-3. **Optional**: run the tests by executing `./test.sh` from the root directory.
+3. **Optional**: run the tests by executing `./test.sh` from the `neural_testbed` main directory.
 
 
 
@@ -80,15 +82,16 @@ In addition to our testbed code, we release a collection of benchmark agents.
 These include the full sets of hyperparameter sweeps necessary to reproduce the paper's results, and can serve as a great starting point for new research.
 You can have a look at these implementations in the [`agents/factories/`](neural_testbed/agents/factories) folder.
 
-We recommended you get started with our [colab tutorial](link).
-After [intallation](#installation) you can also run an agent directly:
+We recommended you get started with our [colab tutorial].
+After [intallation](#installation) you can also run an agent directly by executing the following command from the main directory of `neural_testbed`:
 
 ```bash
-python -m neural_testbed.experiments.enn.run --agent_name=ensemble_plus
+python -m neural_testbed.experiments.run --agent_name=ensemble_plus
 ```
 
 By default, this will save the results for that agent to csv at `/tmp/neural_testbed`.
 You can control these options by flags in the run file.
+In particular, you can run the agent on the whole sweep of tasks in the Neural Testbed by specifying the flag `--problem_id=SWEEP`.
 
 
 ## Citing
@@ -96,17 +99,18 @@ You can control these options by flags in the run file.
 If you use `neural_testbed` in your work, please cite the accompanying [paper]:
 
 ```bibtex
-@inproceedings{,
-    title={Evaluating Predictive Distributions: Does Bayesian Deep Learning Work?},
-    author={},
-    booktitle={},
-    year={2021},
-    url={https://arxiv.org/}
+@misc{osband2021evaluating,
+      title={Evaluating Predictive Distributions: Does Bayesian Deep Learning Work?},
+      author={Ian Osband and Zheng Wen and Seyed Mohammad Asghari and Vikranth Dwaracherla and Botao Hao and Morteza Ibrahimi and Dieterich Lawson and Xiuyuan Lu and Brendan O'Donoghue and Benjamin Van Roy},
+      year={2021},
+      eprint={2110.04629},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
 }
 ```
 
 
 
-[paper]:https://arxiv.org/
-[tutorial]: https://colab.research.google.com/github/deepmind/neural_testbed/blob/master/neural_testbed/reports/tutorial.ipynb
+[paper]:https://arxiv.org/abs/2110.04629
+[colab tutorial]: https://colab.research.google.com/github/deepmind/neural_testbed/blob/master/neural_testbed/tutorial.ipynb
 
