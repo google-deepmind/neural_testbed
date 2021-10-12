@@ -32,10 +32,6 @@ from neural_testbed.likelihood.classification import CategoricalKLSampledXSample
 from neural_testbed.likelihood.classification import ClassificationSampleAccEce
 from neural_testbed.likelihood.classification import compute_discrete_kl
 
-# Classification Parity
-from neural_testbed.likelihood.classification_parity import CategoricalParityCheckKL
-from neural_testbed.likelihood.classification_parity import make_parity_check_estimator
-
 # Classification Projection
 from neural_testbed.likelihood.classification_projection import CategoricalClusterKL
 from neural_testbed.likelihood.classification_projection import KmeansCluster
