@@ -26,12 +26,9 @@ import numpy as np
 class LoadTest(parameterized.TestCase):
 
   @parameterized.parameters([
-      ['classification/0'],
-      ['classification/10'],
-      ['classification/100'],
-      ['regression/0'],
-      ['regression/10'],
-      ['regression/100'],
+      ['classification_2d/0'],
+      ['classification_2d/10'],
+      ['classification_2d/100'],
   ])
   def test_gp_loading(self, gp_id: str):
     """Tests you can load from gp_id and data format matches prior."""

@@ -22,9 +22,14 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 import haiku as hk
+import jax.config
 from neural_testbed.generative import gp_regression
 from neural_testbed.generative import nt_kernels
 import numpy as np
+
+# This is necessary to prevent nans.
+# TODO(vikranthd): Look into fixing the nans and removing this.
+jax.config.update('jax_enable_x64', True)
 
 
 class GPRegressionTest(parameterized.TestCase):
