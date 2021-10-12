@@ -36,13 +36,13 @@ class HypermodelConfig:
   """Configuration for hypermodel agent."""
   index_dim: int = 5  # Index dimension
   num_index_samples: int = 128  # Number of index samples to average over
-  prior_scale: float = 10  # Scale for additive prior function
+  prior_scale: float = 1  # Scale for additive prior function
   l2_weight_decay: float = 1.  # Weight decay
   adaptive_weight_scale: bool = True  # Whether to scale with prior knowledge
-  temp_scale_prior: str = 'none'  # Whether to scale prior with temperature
+  temp_scale_prior: str = 'sqrt'  # How to scale prior with temperature
   distribution: str = 'none'  # Bootsrapping distribution
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
-  prior_hidden_sizes: Sequence[int] = (10, 10)  # Hidden sizes for prior network
+  prior_hidden_sizes: Sequence[int] = (10,)  # Hidden sizes for prior network
   num_batches: int = 2000  # Number of SGD steps
   learning_rate: float = 1e-3  # Learning rate for adam optimizer
   seed: int = 0  # Initialization seed

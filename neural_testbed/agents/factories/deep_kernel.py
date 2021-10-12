@@ -60,7 +60,7 @@ class DeepKernelConfig:
   weight_decay: float = 1.0
   num_inference_samples: int = 32_768
   sigma_squared_factor: float = 1.0
-  scale_factor: float = 25.0
+  scale_factor: float = 10.0
   learning_rate: float = 1e-3
   dropout_rate: Optional[float] = None
   seed: int = 0  # Initialization seed

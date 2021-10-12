@@ -37,10 +37,10 @@ from neural_testbed.agents.factories import utils
 @dataclasses.dataclass
 class SGMCMCConfig:
   """Config Class for SGMCMC."""
-  learning_rate: float = 0.001  # Learning rate for optimizers
-  prior_variance: float = 0.5  # Variance of Gaussian prior
+  learning_rate: float = 0.0001  # Learning rate for optimizers
+  prior_variance: float = 0.1  # Variance of Gaussian prior
   alg_temperature: float = 1  # Temperature parameter for SGLD
-  momentum_decay: float = 0  # Momentum decay parameter for SGLD
+  momentum_decay: float = 0.9  # Momentum decay parameter for SGLD
   preconditioner: str = 'None'  # Choice of preconditioner; None or RMSprop
   num_hidden: int = 50  # Hidden units in network
   num_batches: int = 500000  # Number of SGD steps
