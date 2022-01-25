@@ -101,3 +101,19 @@ def average_sampled_log_likelihood(x: chex.Array) -> float:
   )
 
 
+class MetricCalculator(typing_extensions.Protocol):
+  """Interface for evaluation of multiple posterior samples based on a metric."""
+
+  def __call__(self, logits: chex.Array, labels: chex.Array) -> float:
+    """Calculates a metric based on logits and labels.
+
+    Args:
+      logits: An array of shape [A, B, C] where B is the batch size of data, C
+        is the number of outputs per data (for classification, this is
+        equal to number of classes), and A is the number of random samples for
+        each data.
+      labels: An array of shape [B, 1] where B is the batch size of data.
+
+    Returns:
+      A float number specifies the value of the metric.
+    """

@@ -14,25 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Tests for neural_testbed.experiments.run."""
+"""Tests for neural_testbed.experiments.dropout.run."""
 
 from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
-from neural_testbed import leaderboard
-from neural_testbed.experiments import run
+from neural_testbed.bandit import run
 
 FLAGS = flags.FLAGS
+PAPER_AGENTS = ['mlp', 'bbb', 'dropout', 'ensemble', 'ensemble+', 'hypermodel']
 
 
 class RunTest(parameterized.TestCase):
 
-  @parameterized.parameters([[x] for x in leaderboard.CLASSIFICATION_2D_TEST])
-  def test_neural_testbed(self, problem_id: str):
-    FLAGS.problem_id = problem_id
-    FLAGS.num_batches = 2
+  @parameterized.parameters([[x] for x in PAPER_AGENTS])
+  def test_neural_testbed(self, agent_id: str):
+    FLAGS.agent_id = agent_id
+    FLAGS.input_dim = 2
+    FLAGS.num_steps = 2
+    FLAGS.num_actions = 2
     run.main(None)
 
 
 if __name__ == '__main__':
   absltest.main()
+

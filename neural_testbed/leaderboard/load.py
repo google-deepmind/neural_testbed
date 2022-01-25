@@ -17,7 +17,7 @@
 
 """Loading a leaderboard instance for the testbed."""
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 from absl import logging
 import chex
@@ -61,34 +61,73 @@ def problem_from_config(
     return _load_regression(problem_config)
 
 
+def problem_with_distribution_shift(
+    problem_config: sweep.ProblemConfig,
+    shift_config: sweep.ShiftConfig) -> likelihood.SampleBasedTestbed:
+  """Returns a classification problem with input distribution shift."""
+  return _load_classification(problem_config, shift_config)
+
+
 def _load_classification(
-    problem_config: sweep.ProblemConfig) -> likelihood.SampleBasedTestbed:
-  """Loads a classification problem from problem_config."""
+    problem_config: sweep.ProblemConfig,
+    shift_config: Optional[sweep.ShiftConfig] = None,
+) -> likelihood.SampleBasedTestbed:
+  """Loads a classification problem from problem_config, optional shift_config."""
   rng = hk.PRNGSequence(problem_config.seed)
   prior_knowledge = problem_config.prior_knowledge
+  input_dim = prior_knowledge.input_dim
 
-  data_sampler = generative.make_2layer_mlp_generative_model(
-      input_dim=prior_knowledge.input_dim,
-      num_train=prior_knowledge.num_train,
-      key=next(rng),
+  logit_fn = generative.make_2layer_mlp_logit_fn(
+      input_dim=input_dim,
       temperature=prior_knowledge.temperature,
-      tau=prior_knowledge.tau,
       hidden=50,
       num_classes=prior_knowledge.num_classes,
+      key=next(rng),
   )
-  if prior_knowledge.tau >= 10:
+  if shift_config is None:
+    override_train_data = None
+  else:
+    override_train_data = generative.make_filtered_gaussian_data(
+        input_dim=prior_knowledge.input_dim,
+        logit_fn=logit_fn,
+        reject_prob=shift_config.reject_prob,
+        fraction_rejected_classes=shift_config.fraction_rejected_classes,
+        num_samples=prior_knowledge.num_train,
+        key=next(rng),
+    )
+  data_sampler = generative.ClassificationEnvLikelihood(
+      logit_fn=logit_fn,
+      x_train_generator=generative.make_gaussian_sampler(input_dim),
+      x_test_generator=problem_config.test_distribution(input_dim),
+      num_train=prior_knowledge.num_train,
+      key=next(rng),
+      override_train_data=override_train_data,
+      tau=prior_knowledge.tau,
+  )
+  return likelihood.SampleBasedTestbed(
+      data_sampler=data_sampler,
+      sample_based_kl=make_categorical_kl_estimator(problem_config, next(rng)),
+      prior_knowledge=prior_knowledge,
+  )
+
+
+def make_categorical_kl_estimator(
+    problem_config: sweep.ProblemConfig,
+    key: chex.PRNGKey) -> likelihood.SampleBasedKL:
+  """Make sample based KL estimator for categorial models."""
+  prior_knowledge = problem_config.prior_knowledge
+  if prior_knowledge.tau > 10:
     sample_based_kl = likelihood.CategoricalClusterKL(
         cluster_alg=likelihood.RandomProjection(dimension=7),
         num_enn_samples=problem_config.num_enn_samples,
         num_test_seeds=problem_config.num_test_seeds,
-        key=next(rng),
-        num_classes=prior_knowledge.num_classes,
+        key=key,
     )
   else:
     sample_based_kl = likelihood.CategoricalKLSampledXSampledY(
         num_test_seeds=problem_config.num_test_seeds,
         num_enn_samples=problem_config.num_enn_samples,
-        key=next(rng),
+        key=key,
         num_classes=prior_knowledge.num_classes,
     )
   sample_based_kl = likelihood.add_classification_accuracy_ece(
@@ -97,11 +136,7 @@ def _load_classification(
       num_enn_samples=100,
       num_classes=prior_knowledge.num_classes,
   )
-  return likelihood.SampleBasedTestbed(
-      data_sampler=data_sampler,
-      sample_based_kl=sample_based_kl,
-      prior_knowledge=prior_knowledge,
-  )
+  return sample_based_kl
 
 
 def gaussian_data(key: chex.PRNGKey,

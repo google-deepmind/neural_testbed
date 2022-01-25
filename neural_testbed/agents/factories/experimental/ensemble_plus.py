@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Factory methods for hypermodel agent."""
+"""Factory methods for ensemble_plus agent."""
 
 import dataclasses
 from typing import Sequence
@@ -28,54 +28,45 @@ from neural_testbed import base as testbed_base
 from neural_testbed.agents import enn_agent
 from neural_testbed.agents.factories import base as factories_base
 import numpy as np
-import optax
 
 
 @dataclasses.dataclass
-class HypermodelConfig:
-  """Configuration for hypermodel agent."""
-  index_dim: int = 5  # Index dimension
-  num_index_samples: int = 128  # Number of index samples to average over
-  prior_scale: float = 1  # Scale for additive prior function
+class EnsembleConfig:
+  """Config for ensemble with prior functions."""
+  num_ensemble: int = 100  # Size of ensemble
   l2_weight_decay: float = 1.  # Weight decay
-  adaptive_weight_scale: bool = True  # Whether to scale with prior knowledge
+  adaptive_weight_scale: bool = True  # Whether to scale with prior
+  distribution: str = 'none'  # Boostrap distribution
+  prior_scale: float = 3.  # Scale of prior function
   temp_scale_prior: str = 'sqrt'  # How to scale prior with temperature
-  distribution: str = 'none'  # Bootsrapping distribution
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
-  prior_hidden_sizes: Sequence[int] = (10,)  # Hidden sizes for prior network
-  num_batches: int = 2000  # Number of SGD steps
-  learning_rate: float = 1e-3  # Learning rate for adam optimizer
+  num_batches: int = 1_000  # Number of SGD steps
+  batch_strategy: bool = True  # Whether to scale num_batches with data ratio
   seed: int = 0  # Initialization seed
-  scale: bool = False  # Whether to scale the params or not
 
 
-def make_hypermodel_agent(
-    config: HypermodelConfig) -> enn_agent.VanillaEnnAgent:
-  """Factory method to create a hypermodel."""
+def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
+  """Factory method to create a ensemble with prior."""
 
   def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
     prior_scale = config.prior_scale
-    if config.temp_scale_prior == 'lin':
+    if config.temp_scale_prior == 'linear':
       prior_scale /= prior.temperature
     elif config.temp_scale_prior == 'sqrt':
       prior_scale /= float(jnp.sqrt(prior.temperature))
     else:
       pass
-    return networks.MLPHypermodelPriorIndependentLayers(
-        base_output_sizes=list(config.hidden_sizes) + [prior.num_classes],
-        prior_scale=prior_scale,
+    return networks.make_ensemble_mlp_with_prior_enn(
+        output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         dummy_input=jnp.ones([100, prior.input_dim]),
-        indexer=networks.ScaledGaussianIndexer(config.index_dim),
-        prior_base_output_sizes=list(config.prior_hidden_sizes) +
-        [prior.num_classes],
-        hyper_hidden_sizes=[],
-        seed=config.seed,
-        scale=config.scale,
+        num_ensemble=config.num_ensemble,
+        prior_scale=prior_scale,
+        seed=config.seed + 999,
     )
 
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
-
+    """You can override this function to try different loss functions."""
     single_loss = losses.combine_single_index_losses_as_metric(
         # This is the loss you are training on.
         train_loss=losses.XentLoss(prior.num_classes),
@@ -88,75 +79,98 @@ def make_hypermodel_agent(
     single_loss = losses.add_data_noise(single_loss, boot_fn)
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss(single_loss,
-                                               config.num_index_samples)
+    loss_fn = losses.average_single_index_loss(single_loss, config.num_ensemble)
 
     # Adding weight decay
-    scale = config.l2_weight_decay
+    scale = config.l2_weight_decay / config.num_ensemble
     scale /= prior.num_train
     if config.adaptive_weight_scale:
       scale *= np.sqrt(prior.temperature) * prior.input_dim
     loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 
+  def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:
+    if not config.batch_strategy:
+      return config.num_batches
+    data_ratio = prior.num_train / prior.input_dim
+    if data_ratio > 500:  # high data regime
+      return config.num_batches * 5
+    elif data_ratio < 5:  # low data regime
+      return config.num_batches // 5
+    else:
+      return config.num_batches
+
   agent_config = enn_agent.VanillaEnnConfig(
       enn_ctor=make_enn,
       loss_ctor=make_loss,
-      optimizer=optax.adam(config.learning_rate),
-      num_batches=config.num_batches,
-      seed=config.seed,
-  )
+      num_batches=batch_strategy,
+      seed=config.seed,)
+
   return enn_agent.VanillaEnnAgent(agent_config)
 
 
-def l2reg_sweep() -> Sequence[HypermodelConfig]:
-  """Generates the hypermodel sweep over l2 regularization parameters for paper."""
+def basic_sweep() -> Sequence[EnsembleConfig]:
+  """Basic sweep over hyperparams."""
   sweep = []
-  for l2_weight_decay in [0.1, 0.3, 1, 3, 10]:
-    sweep.append(HypermodelConfig(l2_weight_decay=l2_weight_decay))
+  for num_ensemble in [1, 3, 10, 30, 100]:
+    sweep.append(EnsembleConfig(
+        num_ensemble=num_ensemble,
+    ))
   return tuple(sweep)
 
 
-def index_sweep() -> Sequence[HypermodelConfig]:
-  """Generates the hypermodel sweep over basic parameters for paper."""
-  sweep = []
-  for index_dim in [1, 3, 5, 7]:
-    sweep.append(HypermodelConfig(index_dim=index_dim))
-  return tuple(sweep)
-
-
-def boot_sweep() -> Sequence[HypermodelConfig]:
+def boot_sweep() -> Sequence[EnsembleConfig]:
   """Basic sweep over hyperparams."""
   sweep = []
   for distribution in ['none', 'bernoulli', 'exponential']:
-    sweep.append(HypermodelConfig(distribution=distribution,))
+    sweep.append(EnsembleConfig(
+        distribution=distribution,
+    ))
   return tuple(sweep)
 
 
-def prior_sweep() -> Sequence[HypermodelConfig]:
-  """Generates the hypermodel sweep over prior function parameters for paper."""
+def weight_decay_sweep() -> Sequence[EnsembleConfig]:
+  """Basic sweep over hyperparams."""
   sweep = []
-  for prior_scale in [0, 1]:
-    for prior_hidden_sizes in [(10,), (10, 10)]:
-      for l2_weight_decay in [1, 2]:
-        for temp_scale_prior in ['lin', 'sqrt']:
-          sweep.append(
-              HypermodelConfig(
-                  prior_scale=prior_scale,
-                  prior_hidden_sizes=prior_hidden_sizes,
-                  l2_weight_decay=l2_weight_decay,
-                  temp_scale_prior=temp_scale_prior))
+  for l2_weight_decay in [0.1, 0.3, 1, 3, 10]:
+    sweep.append(EnsembleConfig(
+        l2_weight_decay=l2_weight_decay,
+    ))
   return tuple(sweep)
 
 
-def combined_sweep() -> Sequence[HypermodelConfig]:
-  return tuple(prior_sweep()) + tuple(index_sweep()) + tuple(
-      l2reg_sweep()) + tuple(boot_sweep())
+def prior_scale_sweep() -> Sequence[EnsembleConfig]:
+  """Basic sweep over hyperparams."""
+  sweep = []
+  for temp_scale_prior in ['lin', 'sqrt']:
+    for prior_scale in [1, 3]:
+      sweep.append(EnsembleConfig(
+          temp_scale_prior=temp_scale_prior,
+          prior_scale=prior_scale
+      ))
+  return tuple(sweep)
+
+
+def batch_sweep() -> Sequence[EnsembleConfig]:
+  """Basic sweep over hyperparams."""
+  sweep = []
+  for batch_strategy in [True, False]:
+    for num_batches in [500, 1000]:
+      sweep.append(
+          EnsembleConfig(
+              batch_strategy=batch_strategy,
+              num_batches=num_batches))
+  return tuple(sweep)
+
+
+def combined_sweep() -> Sequence[EnsembleConfig]:
+  return tuple(basic_sweep()) + tuple(boot_sweep()) + tuple(
+      weight_decay_sweep()) + tuple(prior_scale_sweep()) + tuple(batch_sweep())
 
 
 def paper_agent() -> factories_base.PaperAgent:
   return factories_base.PaperAgent(
-      default=HypermodelConfig(),
-      ctor=make_hypermodel_agent,
+      default=EnsembleConfig(),
+      ctor=make_agent,
       sweep=combined_sweep,
   )

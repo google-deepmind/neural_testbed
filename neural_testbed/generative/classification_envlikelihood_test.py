@@ -24,7 +24,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import haiku as hk
 import jax
-from neural_testbed.generative.classification_envlikelihood import ClassificationEnvLikelihood
+from neural_testbed.generative import classification_envlikelihood
 import numpy as np
 
 
@@ -36,15 +36,19 @@ class MLPClassificationEnsembleTest(parameterized.TestCase):
     num_class = 2
     rng = hk.PRNGSequence(0)
 
-    x_generator = lambda k, n: jax.random.normal(k, [n, input_dim])
+    x_train_generator = lambda k, n: jax.random.normal(k, [n, input_dim])
+    x_test_generator = classification_envlikelihood.make_gaussian_sampler(
+        input_dim)
+
     fn_transformed = hk.without_apply_rng(hk.transform(
         lambda x: hk.nets.MLP([10, 10, num_class])(x)))  # pylint: disable=[unnecessary-lambda]
     params = fn_transformed.init(next(rng), np.zeros(shape=(input_dim,)))
     logit_fn = lambda x: fn_transformed.apply(params, x)
 
-    mlp_model = ClassificationEnvLikelihood(
+    mlp_model = classification_envlikelihood.ClassificationEnvLikelihood(
         logit_fn=logit_fn,
-        x_generator=x_generator,
+        x_train_generator=x_train_generator,
+        x_test_generator=x_test_generator,
         num_train=num_train,
         key=next(rng),
         tau=tau,
@@ -76,14 +80,17 @@ class MLPClassificationEnsembleTest(parameterized.TestCase):
     tau = 1
     rng = hk.PRNGSequence(0)
 
-    x_generator = lambda k, n: jax.random.normal(k, [n, input_dim])
+    x_train_generator = lambda k, n: jax.random.normal(k, [n, input_dim])
+    x_test_generator = classification_envlikelihood.make_gaussian_sampler(
+        input_dim)
     fn_transformed = hk.without_apply_rng(hk.transform(
         lambda x: hk.nets.MLP([10, 10, num_class])(x)))  # pylint: disable=[unnecessary-lambda]
     params = fn_transformed.init(next(rng), np.zeros(shape=(input_dim,)))
     logit_fn = lambda x: fn_transformed.apply(params, x)
-    mlp_model = ClassificationEnvLikelihood(
+    mlp_model = classification_envlikelihood.ClassificationEnvLikelihood(
         logit_fn=logit_fn,
-        x_generator=x_generator,
+        x_train_generator=x_train_generator,
+        x_test_generator=x_test_generator,
         num_train=num_train,
         key=next(rng),
         tau=tau,
@@ -104,7 +111,9 @@ class MLPClassificationEnsembleTest(parameterized.TestCase):
     tau = 1
     rng = hk.PRNGSequence(0)
 
-    x_generator = lambda k, n: jax.random.normal(k, [n, input_dim])
+    x_train_generator = lambda k, n: jax.random.normal(k, [n, input_dim])
+    x_test_generator = classification_envlikelihood.make_gaussian_sampler(
+        input_dim)
     fn_transformed = hk.without_apply_rng(hk.transform(
         lambda x: hk.nets.MLP([10, 10, num_class])(x)))  # pylint: disable=[unnecessary-lambda]
 
@@ -112,9 +121,10 @@ class MLPClassificationEnsembleTest(parameterized.TestCase):
     for _ in range(num_seeds):
       params = fn_transformed.init(next(rng), np.zeros(shape=(input_dim,)))
       logit_fn = functools.partial(fn_transformed.apply, params)
-      mlp_model = ClassificationEnvLikelihood(
+      mlp_model = classification_envlikelihood.ClassificationEnvLikelihood(
           logit_fn=logit_fn,
-          x_generator=x_generator,
+          x_train_generator=x_train_generator,
+          x_test_generator=x_test_generator,
           num_train=num_train,
           key=next(rng),
           tau=tau,
@@ -126,6 +136,22 @@ class MLPClassificationEnsembleTest(parameterized.TestCase):
     degenerate_cases = labels_means.count(0.) + labels_means.count(1.)
     # Check that for at most 20% of problems, the labels are degenerate
     assert degenerate_cases / num_seeds <= 0.2
+
+  @parameterized.parameters(itertools.product(
+      [1, 10], [1, 10], [1, 2], [0.01, 0.1]))
+  def test_local_generator(self,
+                           input_dim: int,
+                           tau: int,
+                           kappa: int,
+                           sigma: float):
+    """Checks that the local generator produces valid testing points."""
+    local_sampler = classification_envlikelihood.make_local_sampler(
+        input_dim, kappa, sigma)
+
+    for seed in range(10):
+      test_x = local_sampler(jax.random.PRNGKey(seed), tau)
+      assert test_x.shape == (tau, input_dim)
+      assert np.all(~np.isnan(test_x))
 
 
 if __name__ == '__main__':

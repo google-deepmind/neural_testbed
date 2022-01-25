@@ -26,7 +26,6 @@ import jax
 from jax import numpy as jnp
 from neural_testbed.agents.factories import preconditioner as pre
 from optax import GradientTransformation
-from optax import OptState
 from optax import Params
 
 
@@ -45,7 +44,7 @@ def normal_like_tree(a, key):
   return noise, all_keys[0]
 
 
-class OptaxSGLDState(OptState):
+class OptaxSGLDState(NamedTuple):
   """Optax state for the SGLD optimizer."""
   count: jnp.ndarray
   rng_key: jnp.ndarray

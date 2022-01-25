@@ -22,11 +22,16 @@
 # Base classes
 from neural_testbed.likelihood.base import average_sampled_log_likelihood
 from neural_testbed.likelihood.base import GenerativeDataSampler
+from neural_testbed.likelihood.base import MetricCalculator
 from neural_testbed.likelihood.base import SampleBasedKL
 from neural_testbed.likelihood.base import SampleBasedTestbed
 
 # Classification
 from neural_testbed.likelihood.classification import add_classification_accuracy_ece
+from neural_testbed.likelihood.classification import calculate_accuracy
+from neural_testbed.likelihood.classification import calculate_joint_ll
+from neural_testbed.likelihood.classification import calculate_marginal_ll
+from neural_testbed.likelihood.classification import CalibrationErrorCalculator
 from neural_testbed.likelihood.classification import categorical_log_likelihood
 from neural_testbed.likelihood.classification import CategoricalKLSampledXSampledY
 from neural_testbed.likelihood.classification import ClassificationSampleAccEce
@@ -34,6 +39,7 @@ from neural_testbed.likelihood.classification import compute_discrete_kl
 
 # Classification Projection
 from neural_testbed.likelihood.classification_projection import CategoricalClusterKL
+from neural_testbed.likelihood.classification_projection import JointLLCalculatorProjection
 from neural_testbed.likelihood.classification_projection import KmeansCluster
 from neural_testbed.likelihood.classification_projection import RandomProjection
 

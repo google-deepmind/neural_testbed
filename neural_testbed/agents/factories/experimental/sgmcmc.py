@@ -27,12 +27,12 @@ from enn import networks
 from enn import supervised
 from enn import utils as enn_utils
 import jax
-import jax.numpy as jnp
 from neural_testbed import base as testbed_base
 from neural_testbed.agents.factories import base as factories_base
 from neural_testbed.agents.factories import preconditioner as pre
 from neural_testbed.agents.factories import sgld_optimizer
 from neural_testbed.agents.factories import utils
+import numpy as np
 
 
 @dataclasses.dataclass
@@ -47,6 +47,7 @@ class SGMCMCConfig:
   num_batches: int = 500000  # Number of SGD steps
   burn_in_time: int = 100000  # Burn in time for MCMC sampling
   model_saving_frequency: int = 1000  # Frequency of saving models
+  adaptive_prior_variance: bool = True  # Scale prior_variance with dimension
   seed: int = 0  # Initialization seed
 
 
@@ -92,8 +93,12 @@ def make_agent(config: SGMCMCConfig):
     )
     loss_fn = losses.average_single_index_loss(single_loss, 1)
     # Gaussian prior can be interpreted as a L2-weight decay.
-    scale = (1 / config.prior_variance
-            ) * jnp.sqrt(prior.temperature) * prior.input_dim / prior.num_train
+    prior_variance = config.prior_variance
+    # Scale prior_variance for large input_dim
+    if config.adaptive_prior_variance and prior.input_dim == 100:
+      prior_variance *= 2
+    scale = (1 / prior_variance) * np.sqrt(
+        prior.temperature) * prior.input_dim / prior.num_train
     loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 
@@ -140,31 +145,38 @@ def make_agent(config: SGMCMCConfig):
 def sgld_sweep() -> Sequence[SGMCMCConfig]:
   """sweep for vanilla sgld."""
   sweep = []
-  for learning_rate in [1e-4, 5e-4, 1e-3, 5e-3]:
-    for prior_variance in [0.05, 0.1, 0.2]:
-      sweep.append(SGMCMCConfig(learning_rate, prior_variance))
+  for learning_rate in [5e-4, 1e-3, 5e-3]:
+    for adaptive_prior_variance in [True, False]:
+      for prior_variance in [0.1, 0.5, 1]:
+        sweep.append(
+            SGMCMCConfig(
+                learning_rate=learning_rate,
+                prior_variance=prior_variance,
+                adaptive_prior_variance=adaptive_prior_variance))
   return tuple(sweep)
 
 
 def momentum_sgld_sweep() -> Sequence[SGMCMCConfig]:
   """sweep for momentum sgld."""
   sweep = []
-  for learning_rate in [1e-4, 5e-4, 1e-3, 5e-3]:
-    for prior_variance in [0.05, 0.1, 0.2]:
-      sweep.append(
-          SGMCMCConfig(
-              learning_rate,
-              prior_variance,
-              alg_temperature=1,
-              momentum_decay=0.9))
+  for learning_rate in [5e-4, 1e-3, 5e-3]:
+    for adaptive_prior_variance in [True, False]:
+      for prior_variance in [0.1, 0.5, 1]:
+        sweep.append(
+            SGMCMCConfig(
+                learning_rate=learning_rate,
+                prior_variance=prior_variance,
+                adaptive_prior_variance=adaptive_prior_variance,
+                alg_temperature=1,
+                momentum_decay=0.9))
   return tuple(sweep)
 
 
 def precondition_momentum_sgld_sweep() -> Sequence[SGMCMCConfig]:
   """sweep for momentum sgld with preconditioner."""
   sweep = []
-  for learning_rate in [1e-4, 5e-4, 1e-3, 5e-3]:
-    for prior_variance in [0.05, 0.1, 0.2]:
+  for learning_rate in [5e-4, 1e-3, 5e-3]:
+    for prior_variance in [0.1, 0.5, 1]:
       sweep.append(
           SGMCMCConfig(
               learning_rate,
@@ -178,8 +190,8 @@ def precondition_momentum_sgld_sweep() -> Sequence[SGMCMCConfig]:
 def mlp_sgd_sweep() -> Sequence[SGMCMCConfig]:
   """sweep for a single mlp with sgd optimizer."""
   sweep = []
-  for learning_rate in [1e-4, 5e-4, 1e-3, 5e-3]:
-    for prior_variance in [0.05, 0.1, 0.2]:
+  for learning_rate in [5e-4, 1e-3, 5e-3]:
+    for prior_variance in [0.1, 0.5, 1]:
       sweep.append(
           SGMCMCConfig(
               learning_rate,

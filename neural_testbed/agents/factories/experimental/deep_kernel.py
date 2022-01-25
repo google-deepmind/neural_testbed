@@ -56,7 +56,7 @@ class Normalization:
 @dataclasses.dataclass
 class DeepKernelConfig:
   """Deep kernel config."""
-  num_train_steps: int = 1_000  # number of training steps
+  num_batches: int = 1000  # number of training steps
   batch_size: int = 100  # batch size to train with
   learning_rate: float = 1e-3  # training learning rate
   weight_decay: float = 1.0  # l2 weight decay
@@ -66,6 +66,7 @@ class DeepKernelConfig:
   sigma_squared_factor: float = 4.0  # noise factor
   seed: int = 0  # initialization seed
   normalization: int = Normalization.only_output  #  how to normalize last layer
+  batch_strategy: bool = True  # Whether to scale num_batches with data ratio
 
 
 class TrainingState(NamedTuple):
@@ -195,7 +196,19 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
       return TrainingState(new_params, new_opt_state)
 
     state = TrainingState(params, opt_state)
-    for _ in range(config.num_train_steps):
+
+    if config.batch_strategy:
+      data_ratio = prior.num_train / prior.input_dim
+      if data_ratio > 500:  # high data regime
+        num_batches = config.num_batches * 5
+      elif data_ratio < 5:  # low data regime
+        num_batches = config.num_batches // 5
+      else:
+        num_batches = config.num_batches
+    else:
+      num_batches = config.num_batches
+
+    for _ in range(num_batches):
       batch = next(dataset)
       state = train_step(state, batch)
 
@@ -210,8 +223,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
     # phi_x [B_train, num_features] (training data)
     _, phi_x = predict_fn_t.apply(state.params, next(d).x)
 
-    # at high temperature there is higher sampling noise
-    sigma_squared = config.sigma_squared_factor * prior.temperature
+    sigma_squared = config.sigma_squared_factor
     # [num_features, num_features]
     m = sigma_squared * jnp.eye(phi_x.shape[1]) + phi_x.T @ phi_x
     m_half = jax.scipy.linalg.cholesky(m, lower=True, overwrite_a=True)
@@ -231,8 +243,8 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
           m_half, sample, lower=True, trans=True, overwrite_b=True)
 
       scale = (
-          config.scale_factor * jnp.sqrt(sigma_squared) /
-          jnp.sqrt(prior.num_train) / jnp.sqrt(prior.temperature))
+          config.scale_factor * jnp.sqrt(sigma_squared) *
+          jnp.sqrt(prior.temperature) * prior.input_dim / prior.num_train)
       # [B_test, num_classes]
       return mean_s + scale * phi_s @ sample  # sampled logit from posterior
 
@@ -241,11 +253,11 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
   return deep_kernel_agent
 
 
-def deep_kernel_sweep() -> Sequence[DeepKernelConfig]:
+def base_sweep() -> Sequence[DeepKernelConfig]:
   """Basic sweep over hyperparams."""
   sweep = []
-  for scale_factor in [1., 2., 3., 4., 5., 6.]:
-    for sigma_squared_factor in [0.5, 1., 2., 3., 4.]:
+  for scale_factor in [0.5, 1., 2., 4., 8.]:
+    for sigma_squared_factor in [0.25, 0.5, 1., 2., 4., 8.]:
       sweep.append(
           DeepKernelConfig(
               scale_factor=scale_factor,
@@ -253,9 +265,25 @@ def deep_kernel_sweep() -> Sequence[DeepKernelConfig]:
   return tuple(sweep)
 
 
+def batch_sweep() -> Sequence[DeepKernelConfig]:
+  """Basic sweep over hyperparams."""
+  sweep = []
+  for batch_strategy in [True, False]:
+    for num_batches in [500, 1000]:
+      sweep.append(
+          DeepKernelConfig(
+              batch_strategy=batch_strategy,
+              num_batches=num_batches))
+  return tuple(sweep)
+
+
+def combined_sweep() -> Sequence[DeepKernelConfig]:
+  return tuple(base_sweep()) + tuple(batch_sweep())
+
+
 def paper_agent() -> factories_base.PaperAgent:
   return factories_base.PaperAgent(
       default=DeepKernelConfig(),
       ctor=make_agent,
-      sweep=deep_kernel_sweep,
+      sweep=combined_sweep,
   )

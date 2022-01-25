@@ -19,8 +19,10 @@
 
 import abc
 import time
-from typing import Any, Callable, Mapping, Sequence, Tuple
+from typing import Any, Callable, Dict, Mapping, Sequence, Tuple
 
+from acme.utils import loggers
+import chex
 from neural_testbed import base as testbed_base
 import pandas as pd
 
@@ -67,8 +69,9 @@ class LoggingWrapper(testbed_base.TestbedProblem):
         'evaluation_seconds': time.time() - train_end,
     }
     if enn_quality.extra:
+      extra_results = clean_results(enn_quality.extra)
       results.update({
-          key: value for key, value in enn_quality.extra.items()
+          key: value for key, value in extra_results.items()
       })
     self._logger.write(results)
     return enn_quality
@@ -83,3 +86,17 @@ class LoggingWrapper(testbed_base.TestbedProblem):
     if hasattr(problem, 'problem'):
       return problem.problem
     return problem
+
+
+def clean_results(results: Dict[str, Any]) -> Dict[str, Any]:
+  """Cleans the results for logging (can't log jax arrays)."""
+  def clean_result(value: Any) -> Any:
+    value = loggers.to_numpy(value)
+    if isinstance(value, chex.ArrayNumpy) and value.size == 1:
+      value = float(value)
+    return value
+
+  for key, value in results.items():
+    results[key] = clean_result(value)
+
+  return results

@@ -28,4 +28,5 @@ from neural_testbed.agents.enn_losses import combine_loss_prior_loss
 from neural_testbed.agents.enn_losses import default_enn_loss
 from neural_testbed.agents.enn_losses import default_enn_prior_loss
 from neural_testbed.agents.enn_losses import gaussian_regression_loss
+from neural_testbed.agents.enn_losses import LossCtor
 from neural_testbed.agents.enn_losses import regularized_dropout_loss

@@ -28,5 +28,4 @@ from neural_testbed.real_data.datasets import ORIGINAL_STRUCTURED_DATASETS
 from neural_testbed.real_data.datasets import REGRESSION_DATASETS
 from neural_testbed.real_data.datasets import STRUCTURED_DATASETS
 from neural_testbed.real_data.load import problem_from_id
-from neural_testbed.real_data.load_classification import load as load_classification
-from neural_testbed.real_data.load_regression import load as load_regression
+from neural_testbed.real_data.load_classification import load

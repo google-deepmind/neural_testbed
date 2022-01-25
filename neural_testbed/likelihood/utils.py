@@ -71,6 +71,8 @@ def parse_kl_estimates(kl_estimates: chex.Array) -> testbed_base.ENNQuality:
       'kl_estimate_std': float(jnp.std(kl_estimates)),
       'train_acc': None,
       'test_acc': None,
+      'train_ece': None,
+      'test_ece': None,
       'pct_finite_kl': float(pct_finite_kl)
   }
   return testbed_base.ENNQuality(kl_estimate=kl_estimate, extra=extra)

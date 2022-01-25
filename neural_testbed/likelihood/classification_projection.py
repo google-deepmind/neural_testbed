@@ -22,6 +22,7 @@ WARNING: THIS IS EXPERIMENTAL CODE AND NOT YET AT GOLD QUALITY.
 # TODO(author2): sort out the code quality here.
 
 import dataclasses
+import functools
 from typing import Tuple
 
 import chex
@@ -49,13 +50,50 @@ class ClusterAlg(typing_extensions.Protocol):
 
 
 @dataclasses.dataclass
+class JointLLCalculatorProjection(likelihood_base.MetricCalculator):
+  """Computes joint ll aggregated over enn samples using projection method.
+
+  Depending on data batch_size (can be inferred from logits and labels), this
+  function computes joint ll for tau=batch_size aggregated over enn samples. If
+  data batch_size is one, this function computes marginal ll.
+  """
+  cluster_alg: ClusterAlg  # Algorithm for clustering
+  clip_probits: float  # Clip absolute value of probits at this level
+  cluster_key: chex.PRNGKey  # An RNG key
+
+  def __call__(self, logits: chex.Array, labels: chex.Array) -> float:
+    """Computes joint ll aggregated over enn samples using projection method."""
+    num_enn_samples, tau, num_classes = logits.shape
+    chex.assert_shape(labels, [tau, 1])
+
+    def logits_to_probits(logits: chex.Array) -> chex.Array:
+      probs = jax.nn.softmax(logits)
+      probits = jsp.ndtri(probs)
+      probits = jnp.clip(probits, -self.clip_probits, self.clip_probits)
+      chex.assert_shape(probits, [tau, num_classes])
+      return probits
+
+    # Convert logits to probits
+    probits = jax.lax.map(logits_to_probits, logits)
+
+    # Perform appropriate clustering
+    counts, centers = self.cluster_alg(probits, labels, self.cluster_key)
+    chex.assert_rank([counts, centers], [1, 2])
+    chex.assert_shape(centers, [counts.shape[0], tau])
+
+    # Compute the model log likelihood
+    log_sum_prod = jax.jit(utils.log_sum_prod)
+    avg_ll = log_sum_prod(counts / num_enn_samples, centers)
+    return avg_ll
+
+
+@dataclasses.dataclass
 class CategoricalClusterKL(likelihood_base.SampleBasedKL):
-  """Evaluates KL according to categorical model via Ben's K-means method."""
+  """Evaluates KL according to random clustering of ENN samples."""
   cluster_alg: ClusterAlg  # Algorithm for clustering
   num_enn_samples: int  # Number of samples from ENN environment model
   num_test_seeds: int  # Number of testing seeds for the data generation
   key: chex.PRNGKey  # RNG key
-  num_classes: int  # Purely for shape checking
   clip_probits: float = 5  # Clip absolute value of probits at this level
 
   def __call__(
@@ -64,48 +102,39 @@ class CategoricalClusterKL(likelihood_base.SampleBasedKL):
       data_sampler: likelihood_base.GenerativeDataSampler,
   ) -> testbed_base.ENNQuality:
     """Evaluates KL according to categorical model."""
+    kl_key, enn_key, cluster_key = jax.random.split(self.key, 3)
+    joint_ll_calculator = JointLLCalculatorProjection(
+        self.cluster_alg,
+        self.clip_probits,
+        cluster_key)
+    test_data_fn = jax.jit(data_sampler.test_data)
 
-    def kl_estimate(key: chex.PRNGKey) -> chex.Array:
-      """Estimates the KL for one realization of the data."""
-      data_key, enn_key, cluster_key = jax.random.split(key, 3)
-      data, true_ll = data_sampler.test_data(data_key)
-      tau = data.x.shape[0]
-
-      def sample_probits(key: chex.PRNGKey) -> chex.Array:
-        logits = enn_sampler(data.x, key)
-        probs = jax.nn.softmax(logits)
-        probits = jsp.ndtri(probs)
-        probits = jnp.clip(probits, -self.clip_probits, self.clip_probits)
-        chex.assert_shape(probits, [tau, self.num_classes])
-        return probits
-
+    def get_logits(x: chex.Array) -> chex.Array:
+      """Returns logits for input x."""
+      sample_logits = functools.partial(enn_sampler, x)
       enn_keys = jax.random.split(enn_key, self.num_enn_samples)
       try:
-        probits = jax.lax.map(sample_probits, enn_keys)
+        logits = jax.lax.map(sample_logits, enn_keys)
       except (jax.errors.JAXTypeError, jax.errors.JAXIndexError) as e:
         # TODO(author1): replace with proper logging.
         print(f'Was not able to run enn_sampler inside jit due to: {e}')
-        probits = jnp.array([sample_probits(k) for k in enn_keys])
-      chex.assert_shape(probits, [self.num_enn_samples, tau, self.num_classes])
+        logits = jnp.array([sample_logits(k) for k in enn_keys])
+      return logits
 
-      # Perform appropriate clustering
-      counts, centers = self.cluster_alg(probits, data.y, cluster_key)
-      chex.assert_rank([counts, centers], [1, 2])
-      chex.assert_shape(centers, [counts.shape[0], tau])
+    def kl_estimate(key: chex.PRNGKey) -> chex.Array:
+      """Estimates the KL for one realization of the data."""
+      data, true_ll = test_data_fn(key)
+      logits = get_logits(data.x)
+      return true_ll - joint_ll_calculator(logits, data.y)
 
-      # Compute the model log likelihood
-      log_sum_prod = jax.jit(utils.log_sum_prod)
-      model_ll = log_sum_prod(counts / self.num_enn_samples, centers)
-
-      return true_ll - model_ll
-
-    kl_keys = jax.random.split(self.key, self.num_test_seeds)
+    kl_keys = jax.random.split(kl_key, self.num_test_seeds)
     try:
       kl_estimates = jax.lax.map(kl_estimate, kl_keys)
     except (jax.errors.JAXTypeError, jax.errors.JAXIndexError) as e:
       # TODO(author1): replace with proper logging.
       print(f'Was not able to run kl_estimate inside jit due to: {e}')
       kl_estimates = jnp.array([kl_estimate(k) for k in kl_keys])
+
     return utils.parse_kl_estimates(kl_estimates)
 
 
@@ -173,13 +202,12 @@ class RandomProjection(ClusterAlg):
   """Cluster ENN probits according to random projections."""
   dimension: int
   cluster_only_correct_class: bool = False  # Only cluster on correct class
+  normalize: bool = False  # Whether to apply per-class normalization
 
   def __call__(self,
                probits: chex.Array,
                y: chex.Array,
                key: chex.PRNGKey) -> Tuple[_Counts, _Centers]:
-    """Cluster ENN probits according to random projections."""
-    features = utils.enumerate_all_features(self.dimension, num_values=2)
 
     def cluster_fn(probits: chex.Array,
                    y: chex.Array,
@@ -188,10 +216,19 @@ class RandomProjection(ClusterAlg):
       num_enn_samples, tau, num_classes = probits.shape
       if self.cluster_only_correct_class:
         flat_probits = probits[:, jnp.arange(tau), y.ravel()]
+        target_shape = [num_enn_samples, tau]
       else:
         flat_probits = jnp.reshape(
             probits, [num_enn_samples, tau * num_classes])
+        target_shape = [num_enn_samples, tau * num_classes]
+
+      if self.normalize:
+        flat_probits -= jnp.mean(flat_probits, axis=0, keepdims=True)
+        svd_u, _, svd_v = jnp.linalg.svd(flat_probits, full_matrices=False)
+        flat_probits = jnp.dot(svd_u, svd_v)
+
       a_key, b_key = jax.random.split(key)
+      chex.assert_shape(flat_probits, target_shape)
 
       # Compute the correct label probabilities
       probs = jsp.ndtr(probits)
@@ -214,11 +251,14 @@ class RandomProjection(ClusterAlg):
       chex.assert_shape(projections, [num_enn_samples, self.dimension])
       batched_equal = jax.vmap(jnp.array_equal, in_axes=(0, None))
 
-      # Count the instances of each feature
-      def count_equal_samples(single_f: chex.Array) -> chex.Array:
-        return jnp.sum(batched_equal(projections, single_f))
-      counts = jax.lax.map(count_equal_samples, features)
-      chex.assert_shape(counts, [2 ** self.dimension])
+      num_features = min(num_enn_samples, 2**self.dimension)
+
+      # Choose features as the unique projections, and also get counts
+      features, counts = jnp.unique(projections, axis=0,
+                                    size=num_features,
+                                    return_counts=True)
+      chex.assert_shape(features, [num_features, self.dimension])
+      chex.assert_shape(counts, [num_features])
 
       # TODO(author2): Consider simplifying this step
       # Compute the average for each feature
@@ -235,7 +275,7 @@ class RandomProjection(ClusterAlg):
       single_center = jax.vmap(single_center_per_t, in_axes=[None, 0])
       map_fn = lambda x: single_center(x, jnp.arange(tau))
       all_centers = jax.lax.map(map_fn, features)
-      chex.assert_shape(all_centers, [2 ** self.dimension, tau])
+      chex.assert_shape(all_centers, [num_features, tau])
 
       return counts, all_centers
 

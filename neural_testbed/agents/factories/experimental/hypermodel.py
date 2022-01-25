@@ -43,7 +43,8 @@ class HypermodelConfig:
   distribution: str = 'none'  # Bootsrapping distribution
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
   prior_hidden_sizes: Sequence[int] = (10,)  # Hidden sizes for prior network
-  num_batches: int = 2000  # Number of SGD steps
+  num_batches: int = 1000  # Number of SGD steps
+  batch_strategy: bool = True  # Whether to scale num_batches with data ratio
   learning_rate: float = 1e-3  # Learning rate for adam optimizer
   seed: int = 0  # Initialization seed
   scale: bool = False  # Whether to scale the params or not
@@ -99,13 +100,24 @@ def make_hypermodel_agent(
     loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 
+  def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:
+    if not config.batch_strategy:
+      return config.num_batches
+    data_ratio = prior.num_train / prior.input_dim
+    if data_ratio > 500:  # high data regime
+      return config.num_batches * 5
+    elif data_ratio < 5:  # low data regime
+      return config.num_batches // 5
+    else:
+      return config.num_batches
+
   agent_config = enn_agent.VanillaEnnConfig(
       enn_ctor=make_enn,
       loss_ctor=make_loss,
       optimizer=optax.adam(config.learning_rate),
-      num_batches=config.num_batches,
-      seed=config.seed,
-  )
+      num_batches=batch_strategy,
+      seed=config.seed,)
+
   return enn_agent.VanillaEnnAgent(agent_config)
 
 
@@ -136,22 +148,32 @@ def boot_sweep() -> Sequence[HypermodelConfig]:
 def prior_sweep() -> Sequence[HypermodelConfig]:
   """Generates the hypermodel sweep over prior function parameters for paper."""
   sweep = []
-  for prior_scale in [0, 1]:
-    for prior_hidden_sizes in [(10,), (10, 10)]:
-      for l2_weight_decay in [1, 2]:
-        for temp_scale_prior in ['lin', 'sqrt']:
-          sweep.append(
-              HypermodelConfig(
-                  prior_scale=prior_scale,
-                  prior_hidden_sizes=prior_hidden_sizes,
-                  l2_weight_decay=l2_weight_decay,
-                  temp_scale_prior=temp_scale_prior))
+  for prior_hidden_sizes in [(10,), (10, 10)]:
+    for prior_scale in [1, 3]:
+      for temp_scale_prior in ['lin', 'sqrt']:
+        sweep.append(
+            HypermodelConfig(
+                prior_hidden_sizes=prior_hidden_sizes,
+                prior_scale=prior_scale,
+                temp_scale_prior=temp_scale_prior))
+  return tuple(sweep)
+
+
+def batch_sweep() -> Sequence[HypermodelConfig]:
+  """Basic sweep over hyperparams."""
+  sweep = []
+  for batch_strategy in [True, False]:
+    for num_batches in [500, 1000]:
+      sweep.append(
+          HypermodelConfig(
+              batch_strategy=batch_strategy,
+              num_batches=num_batches))
   return tuple(sweep)
 
 
 def combined_sweep() -> Sequence[HypermodelConfig]:
   return tuple(prior_sweep()) + tuple(index_sweep()) + tuple(
-      l2reg_sweep()) + tuple(boot_sweep())
+      l2reg_sweep()) + tuple(boot_sweep()) + tuple(batch_sweep())
 
 
 def paper_agent() -> factories_base.PaperAgent:

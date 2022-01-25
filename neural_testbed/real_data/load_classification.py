@@ -123,7 +123,7 @@ def load_dataset(
 
 
 def load(dataset_info: datasets.DatasetInfo,
-         tau: int = 1) -> testbed_base.TestbedProblem:
+         tau: int = 1) -> likelihood.SampleBasedTestbed:
   """Load a classification problem from a real dataset specified by config."""
   rng = hk.PRNGSequence(999)
   num_enn_samples = 1000  # We set it to the number we use for our testbed
@@ -140,7 +140,6 @@ def load(dataset_info: datasets.DatasetInfo,
         num_enn_samples=num_enn_samples,
         num_test_seeds=num_test_seeds,
         key=next(rng),
-        num_classes=dataset_info.num_classes,
     )
   else:
     sample_based_kl = likelihood.CategoricalKLSampledXSampledY(

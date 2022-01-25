@@ -189,7 +189,7 @@ class UtilTest(parameterized.TestCase):
 
   @parameterized.product(
       true_prob=[0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
-      enn_err=[-0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2])
+      enn_err=[-0.1, -0.05, 0, 0.05, 0.1])
   def test_bernoulli_sample_based_kl(self, true_prob: float, enn_err: float):
     """Tests the estimated sample-based KL is close to the analytic KL.
 
@@ -202,19 +202,21 @@ class UtilTest(parameterized.TestCase):
     """
     key = jax.random.PRNGKey(0)
     enn_prob = jnp.clip(true_prob + enn_err, 0, 1)
-    true_kl = (true_prob * jnp.log(true_prob / enn_prob)
-               + (1 - true_prob) * jnp.log((1- true_prob) / (1 - enn_prob)))
-    kl_estimator = likelihood.CategoricalKLSampledXSampledY(
-        num_test_seeds=1000,
-        num_enn_samples=1000,
-        key=key)
-    sample_kl = kl_estimator(
-        BernoulliEpistemicSampler(enn_prob), BernoulliDataSampler(true_prob))
-    self.assertAlmostEqual(
-        true_kl, sample_kl.kl_estimate,
-        msg=f'Expected KL={true_kl} but received {sample_kl}',
-        delta=5e-2,
-    )
+    # We test only when enn_prob is in (0, 1)
+    if 0 < enn_prob < 1:
+      true_kl = (true_prob * jnp.log(true_prob / enn_prob)
+                 + (1 - true_prob) * jnp.log((1- true_prob) / (1 - enn_prob)))
+      kl_estimator = likelihood.CategoricalKLSampledXSampledY(
+          num_test_seeds=1000,
+          num_enn_samples=1000,
+          key=key)
+      sample_kl = kl_estimator(
+          BernoulliEpistemicSampler(enn_prob), BernoulliDataSampler(true_prob))
+      self.assertAlmostEqual(
+          true_kl, sample_kl.kl_estimate,
+          msg=f'Expected KL={true_kl} but received {sample_kl}',
+          delta=5e-2,
+      )
 
   @parameterized.product(
       base_seed=[1, 1000],

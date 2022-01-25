@@ -19,9 +19,14 @@
 
 # Classification w.r.t environment likelihood
 from neural_testbed.generative.classification_envlikelihood import ClassificationEnvLikelihood
+from neural_testbed.generative.classification_envlikelihood import make_gaussian_sampler
+from neural_testbed.generative.classification_envlikelihood import make_local_sampler
+from neural_testbed.generative.classification_envlikelihood import make_weibull_sampler
+from neural_testbed.generative.classification_envlikelihood import XGenerator
 
 # Factories
-from neural_testbed.generative.factories import make_2layer_mlp_generative_model
+from neural_testbed.generative.factories import make_2layer_mlp_logit_fn
+from neural_testbed.generative.factories import make_filtered_gaussian_data
 
 # Classification with GP likelihood
 from neural_testbed.generative.gp_classification_envlikelihood import GPClassificationEnvLikelihood

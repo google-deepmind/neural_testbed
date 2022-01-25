@@ -18,7 +18,7 @@
 """A minimalist wrapper around ENN experiment for testbed submission."""
 
 import dataclasses
-from typing import Dict, Optional
+from typing import Dict, Optional, Union, Callable
 
 from acme.utils import loggers
 import chex
@@ -32,18 +32,23 @@ from neural_testbed.agents import enn_losses
 import optax
 
 
+# Allow for either an integer num_batches or determined from prior
+_BatchStrategy = Union[int, Callable[[testbed_base.PriorKnowledge], int]]
+
+
 @dataclasses.dataclass
 class VanillaEnnConfig:
   """Configuration options for the VanillaEnnAgent."""
   enn_ctor: enn_losses.EnnCtor
   loss_ctor: enn_losses.LossCtor = enn_losses.default_enn_loss()
   optimizer: optax.GradientTransformation = optax.adam(1e-3)
-  num_batches: int = 1000
+  num_batches: _BatchStrategy = 1000
   # TODO(author2): Complete prior loss refactor --> MultilossExperiment
   prior_loss_ctor: Optional[enn_losses.LossCtor] = None
   prior_loss_freq: int = 10
   seed: int = 0
   batch_size: int = 100
+  center_train_data: bool = False
   eval_batch_size: Optional[int] = None
   logger: Optional[loggers.Logger] = None
   train_log_freq: Optional[int] = None
@@ -73,6 +78,9 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
   ) -> testbed_base.EpistemicSampler:
     """Wraps an ENN as a testbed agent, using sensible loss/bootstrapping."""
     enn = self.config.enn_ctor(prior)
+    if self.config.center_train_data:
+      enn = utils.make_centered_enn(enn, data.x)
+
     enn_data = enn_base.Batch(data.x, data.y)
     dataset = utils.make_batch_iterator(
         enn_data, self.config.batch_size, self.config.seed)
@@ -90,6 +98,13 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
           should_train=lambda step: step % self.config.prior_loss_freq == 0,
           name='prior_loss',
       ))
+
+    # Parse number of training batches from config _BatchStrategy
+    if isinstance(self.config.num_batches, int):
+      num_batches = self.config.num_batches
+    else:
+      num_batches = self.config.num_batches(prior)
+
     self.experiment = supervised.MultilossExperiment(
         enn=enn,
         trainers=trainers,
@@ -97,12 +112,14 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
         seed=self.config.seed,
         logger=self.config.logger,
         train_log_freq=logging_freq(
-            self.config.num_batches, log_freq=self.config.train_log_freq),
+            num_batches, log_freq=self.config.train_log_freq),
         eval_datasets=self.eval_datasets,
         eval_log_freq=logging_freq(
-            self.config.num_batches, log_freq=self.config.eval_log_freq),
+            num_batches, log_freq=self.config.eval_log_freq),
     )
-    self.experiment.train(self.config.num_batches)
+
+    # Train agent and return the ENN
+    self.experiment.train(num_batches)
     return extract_enn_sampler(self.experiment)
 
 

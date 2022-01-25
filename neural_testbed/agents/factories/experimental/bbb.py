@@ -37,15 +37,16 @@ class BBBConfig:
   """Configuration for bbb agent."""
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
   num_batches: int = 1000  # Number of SGD steps
-  learning_rate: float = 1e-3  # Learning rate for adam optimizer
+  learning_rate: float = 3e-3  # Learning rate for adam optimizer
   seed: int = 0  # Initialization seed
-  sigma_1: float = 0.3  # Standard deviation of the first Gaussian prior
-  sigma_2: float = 0.75  # Standard deviation of the second Gaussian prior
+  sigma_1: float = 1  # Standard deviation of the first Gaussian prior
+  sigma_2: float = 0.5  # Standard deviation of the second Gaussian prior
   mixture_scale: float = 1.  # Scale for mixture of two Gauusian densities
   num_index_samples: int = 8  # Number of index samples to average over
   kl_method: str = 'analytical'  # How to find KL of prior and vi posterior
   adaptive_scale: bool = True  # Whether to scale prior KL with temp
   output_scale: bool = False  # Whether to scale output with temperature
+  batch_strategy: bool = False  # Whether to scale num_batches with data ratio
 
 
 def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
@@ -91,10 +92,21 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
         single_loss, num_index_samples=config.num_index_samples)
     return loss_fn
 
+  def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:
+    if not config.batch_strategy:
+      return config.num_batches
+    data_ratio = prior.num_train / prior.input_dim
+    if data_ratio > 500:  # high data regime
+      return config.num_batches * 5
+    elif data_ratio < 5:  # low data regime
+      return config.num_batches // 5
+    else:
+      return config.num_batches
+
   agent_config = enn_agent.VanillaEnnConfig(
       enn_ctor=make_enn,
       loss_ctor=make_loss,
-      num_batches=config.num_batches,
+      num_batches=batch_strategy,
       optimizer=optax.adam(config.learning_rate),
       seed=config.seed,
   )
@@ -102,25 +114,23 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
 
 
 def base_sweep() -> Sequence[BBBConfig]:
-  """Generates the bbb sweep over network parameters."""
+  """Basic sweep over hyperparams."""
   sweep = []
   for learning_rate in [1e-3, 3e-3]:
-    for sigma_1 in [0.3, 0.5, 0.7, 1, 2]:
-      for num_batches in [1000, 2000]:
-        sweep.append(
-            BBBConfig(
-                learning_rate=learning_rate,
-                sigma_1=sigma_1,
-                num_batches=num_batches))
+    for num_batches in [500, 1000, 2000]:
+      sweep.append(
+          BBBConfig(
+              learning_rate=learning_rate,
+              num_batches=num_batches))
   return tuple(sweep)
 
 
 def prior_sweep() -> Sequence[BBBConfig]:
-  """Generates the bbb sweep over prior parameters."""
+  """"Basic sweep over hyperparams."""
   sweep = []
   for sigma_1 in [1, 2, 4]:
-    for sigma_2 in [0.3, 0.5, 0.7]:
-      for mixture_scale in [0.5]:
+    for sigma_2 in [0.25, 0.5, 0.75]:
+      for mixture_scale in [0, 0.5, 1]:
         sweep.append(BBBConfig(sigma_1=sigma_1,
                                sigma_2=sigma_2,
                                mixture_scale=mixture_scale))
@@ -128,15 +138,26 @@ def prior_sweep() -> Sequence[BBBConfig]:
 
 
 def network_sweep() -> Sequence[BBBConfig]:
-  """Generates the bbb sweep over network architecture for paper."""
+  """Basic sweep over hyperparams."""
   sweep = []
-  for hidden_sizes in [(50, 50), (100, 100), (50, 50, 50)]:
+  for hidden_sizes in [(50, 50), (100, 100),]:
     sweep.append(BBBConfig(hidden_sizes=hidden_sizes))
   return tuple(sweep)
 
 
+def batch_sweep() -> Sequence[BBBConfig]:
+  """Basic sweep over hyperparams."""
+  sweep = []
+  for batch_strategy in [True, False]:
+    for num_batches in [500, 1000]:
+      sweep.append(BBBConfig(batch_strategy=batch_strategy,
+                             num_batches=num_batches))
+  return tuple(sweep)
+
+
 def combined_sweep() -> Sequence[BBBConfig]:
-  return tuple(base_sweep()) + tuple(prior_sweep()) + tuple(network_sweep())
+  return tuple(base_sweep()) + tuple(prior_sweep()) + tuple(
+      network_sweep()) + tuple(batch_sweep())
 
 
 def paper_agent() -> factories_base.PaperAgent:

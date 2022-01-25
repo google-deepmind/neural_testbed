@@ -156,10 +156,10 @@ def plot_1d_classification(true_model,  # TODO(author2): add typing
 
   # Calculate the true function distribution
   x = true_model.data_sampler.test_x
-  num_test, input_dim = x.shape
+  _, input_dim = x.shape
   prob_df = pd.DataFrame({
       'x': x[:, 0],
-      'y': true_model.data_sampler.probabilities[-num_test:, 1],
+      'y': true_model.data_sampler.probabilities[:, 1],
   })
   prob_df['std'] = 0
   prob_df['method'] = 'true_function'
