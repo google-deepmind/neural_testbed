@@ -51,7 +51,7 @@ setuptools.setup(
         'jaxlib',
         'jax',
         'ml_collections',
-        'tensorflow>=2.7',
+        'tensorflow',
         'tensorflow-datasets',
         'tensorflow-probability',
         'chex',
