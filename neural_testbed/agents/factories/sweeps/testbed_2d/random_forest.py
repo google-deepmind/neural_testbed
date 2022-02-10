@@ -14,16 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Exposing public methods for approximate posterior training."""
+"""Sweep for Random Forest agent."""
+
+from typing import Sequence
 
 from neural_testbed.agents.factories import base as factories_base
-from neural_testbed.agents.factories import baselines
-from neural_testbed.agents.factories import bbb
-from neural_testbed.agents.factories import deep_kernel
-from neural_testbed.agents.factories import dropout
-from neural_testbed.agents.factories import ensemble
-from neural_testbed.agents.factories import ensemble_plus
-from neural_testbed.agents.factories import hypermodel
-from neural_testbed.agents.factories import knn
 from neural_testbed.agents.factories import random_forest
-from neural_testbed.agents.factories import sgmcmc
+
+
+def rf_sweep() -> Sequence[random_forest.RandomForestConfig]:
+  sweep = []
+  for n_estimators in [10, 100, 1000]:
+    for criterion in ['gini', 'entropy']:
+      sweep.append(random_forest.RandomForestConfig(n_estimators, criterion))
+  return tuple(sweep)
+
+
+def paper_agent() -> factories_base.PaperAgent:
+  return factories_base.PaperAgent(
+      default=random_forest.RandomForestConfig(),
+      ctor=random_forest.make_agent,
+      sweep=rf_sweep,
+  )

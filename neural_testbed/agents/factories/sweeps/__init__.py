@@ -14,16 +14,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Exposing public methods for approximate posterior training."""
-
-from neural_testbed.agents.factories import base as factories_base
-from neural_testbed.agents.factories import baselines
-from neural_testbed.agents.factories import bbb
-from neural_testbed.agents.factories import deep_kernel
-from neural_testbed.agents.factories import dropout
-from neural_testbed.agents.factories import ensemble
-from neural_testbed.agents.factories import ensemble_plus
-from neural_testbed.agents.factories import hypermodel
-from neural_testbed.agents.factories import knn
-from neural_testbed.agents.factories import random_forest
-from neural_testbed.agents.factories import sgmcmc

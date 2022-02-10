@@ -24,7 +24,6 @@ from enn import losses
 from enn import networks
 from neural_testbed import base as testbed_base
 from neural_testbed.agents import enn_agent
-from neural_testbed.agents.factories import base as factories_base
 import numpy as np
 
 
@@ -35,6 +34,7 @@ class VanillaEnsembleConfig:
   adaptive_weight_scale: bool = True  # Whether to scale with prior
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
   num_batches: int = 1000  # Number of SGD steps
+  batch_strategy: bool = False  # Whether to scale num_batches with data ratio
   seed: int = 0  # Initialization seed
 
 
@@ -69,41 +69,21 @@ def make_agent(config: VanillaEnsembleConfig) -> enn_agent.VanillaEnnAgent:
     loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 
+  def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:
+    if not config.batch_strategy:
+      return config.num_batches
+    data_ratio = prior.num_train / prior.input_dim
+    if data_ratio > 500:  # high data regime
+      return config.num_batches * 5
+    elif data_ratio < 5:  # low data regime
+      return config.num_batches // 5
+    else:
+      return config.num_batches
+
   agent_config = enn_agent.VanillaEnnConfig(
       enn_ctor=make_enn,
       loss_ctor=make_loss,
-      num_batches=config.num_batches,
+      num_batches=batch_strategy,
       seed=config.seed,
   )
   return enn_agent.VanillaEnnAgent(agent_config)
-
-
-def vanilla_sweep() -> Sequence[VanillaEnsembleConfig]:
-  sweep = []
-  for num_ensemble in [1, 3, 10, 30, 100]:
-    sweep.append(VanillaEnsembleConfig(num_ensemble))
-  return tuple(sweep)
-
-
-def weight_sweep() -> Sequence[VanillaEnsembleConfig]:
-  sweep = []
-  for adaptive_weight_scale in [True, False]:
-    for l2_weight_decay in [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100]:
-      sweep.append(VanillaEnsembleConfig(
-          num_ensemble=30,
-          l2_weight_decay=l2_weight_decay,
-          adaptive_weight_scale=adaptive_weight_scale,
-      ))
-  return tuple(sweep)
-
-
-def combined_sweep() -> Sequence[VanillaEnsembleConfig]:
-  return tuple(vanilla_sweep()) + tuple(weight_sweep())
-
-
-def paper_agent() -> factories_base.PaperAgent:
-  return factories_base.PaperAgent(
-      default=VanillaEnsembleConfig(),
-      ctor=make_agent,
-      sweep=combined_sweep,
-  )

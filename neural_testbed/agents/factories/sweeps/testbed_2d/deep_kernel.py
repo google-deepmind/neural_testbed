@@ -14,16 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Exposing public methods for approximate posterior training."""
+"""Sweeps for deep kernel agent."""
+
+from typing import Sequence
 
 from neural_testbed.agents.factories import base as factories_base
-from neural_testbed.agents.factories import baselines
-from neural_testbed.agents.factories import bbb
 from neural_testbed.agents.factories import deep_kernel
-from neural_testbed.agents.factories import dropout
-from neural_testbed.agents.factories import ensemble
-from neural_testbed.agents.factories import ensemble_plus
-from neural_testbed.agents.factories import hypermodel
-from neural_testbed.agents.factories import knn
-from neural_testbed.agents.factories import random_forest
-from neural_testbed.agents.factories import sgmcmc
+
+
+def deep_kernel_sweep() -> Sequence[deep_kernel.DeepKernelConfig]:
+  """Basic sweep over hyperparams."""
+  sweep = []
+  for scale_factor in [1., 2., 3., 4., 5., 6.]:
+    for sigma_squared_factor in [0.5, 1., 2., 3., 4.]:
+      sweep.append(
+          deep_kernel.DeepKernelConfig(
+              scale_factor=scale_factor,
+              sigma_squared_factor=sigma_squared_factor))
+  return tuple(sweep)
+
+
+def paper_agent() -> factories_base.PaperAgent:
+  return factories_base.PaperAgent(
+      default=deep_kernel.DeepKernelConfig(),
+      ctor=deep_kernel.make_agent,
+      sweep=deep_kernel_sweep,
+  )

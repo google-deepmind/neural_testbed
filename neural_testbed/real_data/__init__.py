@@ -16,16 +16,31 @@
 # ============================================================================
 
 """Exposing the public methods of real data."""
+
+# Realdata data sampler
+from neural_testbed.real_data.data_sampler import make_global_sampler
+from neural_testbed.real_data.data_sampler import make_local_sampler
 from neural_testbed.real_data.data_sampler import RealDataSampler
+
+# Realdata datasets
 from neural_testbed.real_data.datasets import CLASSIFICATION_DATASETS
 from neural_testbed.real_data.datasets import DatasetInfo
 from neural_testbed.real_data.datasets import DATASETS
 from neural_testbed.real_data.datasets import DATASETS_SETTINGS
-from neural_testbed.real_data.datasets import IMAGE_DATASETS
-from neural_testbed.real_data.datasets import ORIGINAL_CLASSIFICATION_DATASETS
-from neural_testbed.real_data.datasets import ORIGINAL_IMAGE_DATASETS
-from neural_testbed.real_data.datasets import ORIGINAL_STRUCTURED_DATASETS
 from neural_testbed.real_data.datasets import REGRESSION_DATASETS
-from neural_testbed.real_data.datasets import STRUCTURED_DATASETS
+
+# Realdata loading of testbed problem
+from neural_testbed.real_data.load import problem_from_config
 from neural_testbed.real_data.load import problem_from_id
-from neural_testbed.real_data.load_classification import load
+
+# Realdata sweep of testbed problems
+from neural_testbed.real_data.sweep import CLASSIFICATION
+from neural_testbed.real_data.sweep import CLASSIFICATION_NUM_DATA
+from neural_testbed.real_data.sweep import ProblemConfig
+from neural_testbed.real_data.sweep import REGRESSION
+from neural_testbed.real_data.sweep import SETTINGS
+
+# Realdata utils
+from neural_testbed.real_data.utils import config_from_dataset_name
+from neural_testbed.real_data.utils import load_classification_dataset
+from neural_testbed.real_data.utils import load_regression_dataset

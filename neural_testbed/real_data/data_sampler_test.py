@@ -41,7 +41,11 @@ class RealDataClassificationTest(parameterized.TestCase):
     y = np.random.randint(num_classes, size=(data_size, 1))
     data = testbed_base.Data(x=x, y=y)
     train_data, test_data = data, data
-    data_sampler = real_data_sampler.RealDataSampler(train_data, test_data, tau)
+    data_sampler = real_data_sampler.RealDataSampler(
+        train_data=train_data,
+        test_sampler=real_data_sampler.make_global_sampler(test_data),
+        tau=tau,
+    )
     train_data = data_sampler.train_data
     np.testing.assert_allclose(train_data.x, x, rtol=1e-6, atol=0)
     np.testing.assert_allclose(train_data.y, y, rtol=1e-6, atol=0)

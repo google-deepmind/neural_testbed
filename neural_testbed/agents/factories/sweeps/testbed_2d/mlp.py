@@ -14,16 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Exposing public methods for approximate posterior training."""
+"""Sweeps for mlp agent."""
+
+from typing import Sequence
 
 from neural_testbed.agents.factories import base as factories_base
 from neural_testbed.agents.factories import baselines
-from neural_testbed.agents.factories import bbb
-from neural_testbed.agents.factories import deep_kernel
-from neural_testbed.agents.factories import dropout
-from neural_testbed.agents.factories import ensemble
-from neural_testbed.agents.factories import ensemble_plus
-from neural_testbed.agents.factories import hypermodel
-from neural_testbed.agents.factories import knn
-from neural_testbed.agents.factories import random_forest
-from neural_testbed.agents.factories import sgmcmc
+
+
+def mlp_sweep() -> Sequence[baselines.MLPConfig]:
+  sweep = []
+  for adaptive_weight_scale in [True, False]:
+    for l2_weight_decay in [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100]:
+      sweep.append(baselines.MLPConfig(
+          l2_weight_decay=l2_weight_decay,
+          adaptive_weight_scale=adaptive_weight_scale,
+      ))
+  return tuple(sweep)
+
+
+def mlp_paper_agent() -> factories_base.PaperAgent:
+  return factories_base.PaperAgent(
+      default=baselines.MLPConfig(),
+      ctor=baselines.make_mlp_agent,
+      sweep=mlp_sweep)

@@ -36,6 +36,7 @@ class MLPConfig:
   l2_weight_decay: float = 1.  # Weight decay
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
   num_batches: int = 1000  # Number of SGD steps
+  batch_strategy: bool = False  # Whether to scale num_batches with data ratio
   seed: int = 0  # Initialization seed
 
 
@@ -49,24 +50,6 @@ def make_mlp_agent(config: MLPConfig) -> enn_agent.VanillaEnnAgent:
       num_batches=config.num_batches,
       seed=config.seed)
   return ensemble.make_agent(config)
-
-
-def mlp_sweep() -> Sequence[MLPConfig]:
-  sweep = []
-  for adaptive_weight_scale in [True, False]:
-    for l2_weight_decay in [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100]:
-      sweep.append(MLPConfig(
-          l2_weight_decay=l2_weight_decay,
-          adaptive_weight_scale=adaptive_weight_scale,
-      ))
-  return tuple(sweep)
-
-
-def mlp_paper_agent() -> factories_base.PaperAgent:
-  return factories_base.PaperAgent(
-      default=MLPConfig(),
-      ctor=make_mlp_agent,
-      sweep=mlp_sweep)
 
 
 @dataclasses.dataclass

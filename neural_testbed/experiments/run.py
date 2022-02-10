@@ -20,7 +20,7 @@
 from absl import app
 from absl import flags
 from neural_testbed import leaderboard
-from neural_testbed.agents import factories
+from neural_testbed.agents.factories.sweeps import testbed as factories
 from neural_testbed.experiments import experiment
 from neural_testbed.experiments import pool
 from neural_testbed.leaderboard import sweep

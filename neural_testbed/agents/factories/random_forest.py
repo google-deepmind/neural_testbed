@@ -17,11 +17,9 @@
 """Factory methods for Random Forest baseline agent."""
 
 import dataclasses
-from typing import Sequence
 
 from enn import base as enn_base
 from neural_testbed import base as testbed_base
-from neural_testbed.agents.factories import base as factories_base
 import numpy as np
 from sklearn import ensemble
 
@@ -65,19 +63,3 @@ def make_agent(config: RandomForestConfig) -> testbed_base.TestbedAgent:
     return enn_sampler
 
   return random_forest_agent
-
-
-def rf_sweep() -> Sequence[RandomForestConfig]:
-  sweep = []
-  for n_estimators in [10, 100, 1000]:
-    for criterion in ['gini', 'entropy']:
-      sweep.append(RandomForestConfig(n_estimators, criterion))
-  return tuple(sweep)
-
-
-def paper_agent() -> factories_base.PaperAgent:
-  return factories_base.PaperAgent(
-      default=RandomForestConfig(),
-      ctor=make_agent,
-      sweep=rf_sweep,
-  )

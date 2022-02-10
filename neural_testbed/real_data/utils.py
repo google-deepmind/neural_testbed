@@ -15,20 +15,21 @@
 # limitations under the License.
 # ============================================================================
 
-"""Loading a classification real data problem for the testbed."""
+"""Utils for real data testbed."""
 
-from typing import Dict, Union
+from typing import Dict, Tuple, Union, Optional
 
 import chex
-import haiku as hk
 from neural_testbed import base as testbed_base
-from neural_testbed import likelihood
-from neural_testbed.real_data import data_sampler as real_data
 from neural_testbed.real_data import datasets
+from neural_testbed.real_data import sweep
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-Features = Union[Dict[str, Union[int, float]], chex.Array]
+_DictFeat = Dict[str, Union[int, float]]
+Features = Union[_DictFeat, chex.Array]
 
 
 def _standardize_data(x: chex.Array,
@@ -110,9 +111,9 @@ def _load_image_dataset(
   return data
 
 
-def load_dataset(
+def load_classification_dataset(
     dataset_info: datasets.DatasetInfo, split: str) -> testbed_base.Data:
-  """Loads the dataset as an iterator of batches."""
+  """Returns dataset data based on problem_config and split."""
   dataset_name = dataset_info.dataset_name
   if dataset_name not in datasets.CLASSIFICATION_DATASETS:
     raise ValueError(f'dataset {dataset_name} is not supported yet.')
@@ -122,45 +123,90 @@ def load_dataset(
     return _load_image_dataset(dataset_info=dataset_info, split=split)
 
 
-def load(dataset_info: datasets.DatasetInfo,
-         tau: int = 1) -> likelihood.SampleBasedTestbed:
-  """Load a classification problem from a real dataset specified by config."""
-  rng = hk.PRNGSequence(999)
-  num_enn_samples = 1000  # We set it to the number we use for our testbed
-  num_test_seeds = int(max(1000 / tau, 1))  # Match testbed
-  train_data = load_dataset(dataset_info=dataset_info, split='train')
-  test_data = load_dataset(dataset_info=dataset_info, split='test')
+def get_uci_data(name) -> Tuple[chex.Array, chex.Array]:
+  """Returns an array of features and an array of labels for dataset `name`."""
+  spec = datasets.DATA_SPECS.get(name)
+  if spec is None:
+    raise ValueError('Unknown dataset: {}. Available datasets:\n{}'.format(
+        name, '\n'.join(datasets.DATA_SPECS.keys())))
+  with tf.io.gfile.GFile(spec.path) as f:
+    df = pd.read_csv(f)
+  labels = df.pop(spec.label).to_numpy().astype(np.float32)
+  for ex in spec.excluded:
+    _ = df.pop(ex)
+  features = df.to_numpy().astype(np.float32)
+  return features, labels
 
-  data_sampler = real_data.RealDataSampler(train_data, test_data, tau)
 
-  # TODO(lxlu): Tau threshold may need to depend on number of classes.
-  if tau >= 10:
-    sample_based_kl = likelihood.CategoricalClusterKL(
-        cluster_alg=likelihood.RandomProjection(dimension=10),
-        num_enn_samples=num_enn_samples,
-        num_test_seeds=num_test_seeds,
-        key=next(rng),
-    )
+def load_regression_dataset(
+    dataset_name: str) -> Tuple[testbed_base.Data, testbed_base.Data]:
+  """Returns dataset data from dataset_name."""
+  if dataset_name not in datasets.REGRESSION_DATASETS:
+    raise ValueError(f'dataset {dataset_name} is not supported yet.')
+  x, y = get_uci_data(dataset_name)
+  if len(y.shape) == 1:
+    y = y[:, None]
+  train_test_split = 0.8
+  random_permutation = np.random.permutation(x.shape[0])
+  n_train = int(x.shape[0] * train_test_split)
+  train_ind = random_permutation[:n_train]
+  test_ind = random_permutation[n_train:]
+  x_train, y_train = x[train_ind, :], y[train_ind, :]
+  x_test, y_test = x[test_ind, :], y[test_ind, :]
+
+  x_mean, x_std = np.mean(x_train, axis=0), np.std(x_train, axis=0)
+  y_mean = np.mean(y_train, axis=0)
+  epsilon = tf.keras.backend.epsilon()
+  x_train = (x_train - x_mean) / (x_std + epsilon)
+  x_test = (x_test - x_mean) / (x_std + epsilon)
+  y_train, y_test = y_train - y_mean, y_test - y_mean
+  train_data = testbed_base.Data(x=x_train, y=y_train)
+  test_data = testbed_base.Data(x=x_test, y=y_test)
+  return train_data, test_data
+
+
+def config_from_dataset_name(
+    dataset_name: str,
+    tau: int = 1,
+    seed: int = 0,
+    temperature: float = 0.01,
+    noise_std: float = 1.,
+    num_train: Optional[int] = None,
+) -> sweep.ProblemConfig:
+  """Returns a testbed problem based on a dataset name and tau.
+
+  Args:
+    dataset_name: name of the dataset.
+    tau: value of tau for joint prediction.
+    seed: random seed.
+    temperature: temperature to be used in prior_knowledge. It does not affect
+      the data.
+    noise_std: noise_std to be used in prior_knowledge. It does not affect
+      the data.
+    num_train: optional, it can be used to limit the number of training data.
+
+  Returns:
+    A problem config for real data.
+  """
+  dataset_info = datasets.DATASETS_SETTINGS[dataset_name]
+  if num_train is None:
+    num_train = dataset_info.num_train
   else:
-    sample_based_kl = likelihood.CategoricalKLSampledXSampledY(
-        num_test_seeds=num_test_seeds,
-        num_enn_samples=num_enn_samples,
-        # TODO(author1): Verify that fixed rngk is not causing issues.
-        key=next(rng),
-        num_classes=dataset_info.num_classes,
-    )
-  sample_based_kl = likelihood.add_classification_accuracy_ece(
-      sample_based_kl,
-      num_test_seeds=int(1_000 / tau) + 1,
-      num_enn_samples=100,
-      num_classes=dataset_info.num_classes,
-  )
+    num_train = min(num_train, dataset_info.num_train)
+
   prior_knowledge = testbed_base.PriorKnowledge(
       input_dim=dataset_info.input_dim,
-      num_train=dataset_info.num_train,
+      num_train=num_train,
       num_classes=dataset_info.num_classes,
-      temperature=0.01,
       tau=tau,
+      temperature=temperature,
+      noise_std=noise_std,
   )
-  return likelihood.SampleBasedTestbed(
-      data_sampler, sample_based_kl, prior_knowledge)
+
+  problem_config = sweep.ProblemConfig(
+      prior_knowledge=prior_knowledge,
+      seed=seed,
+      dataset_name=dataset_name,
+  )
+
+  return problem_config

@@ -27,7 +27,6 @@ import jax.numpy as jnp
 
 from neural_testbed import base as testbed_base
 from neural_testbed.agents import enn_agent
-from neural_testbed.agents.factories import base as factories_base
 
 import optax
 
@@ -46,6 +45,7 @@ class BBBConfig:
   kl_method: str = 'analytical'  # How to find KL of prior and vi posterior
   adaptive_scale: bool = True  # Whether to scale prior KL with temp
   output_scale: bool = False  # Whether to scale output with temperature
+  batch_strategy: bool = False  # Whether to scale num_batches with data ratio
 
 
 def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
@@ -91,57 +91,22 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
         single_loss, num_index_samples=config.num_index_samples)
     return loss_fn
 
+  def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:
+    if not config.batch_strategy:
+      return config.num_batches
+    data_ratio = prior.num_train / prior.input_dim
+    if data_ratio > 500:  # high data regime
+      return config.num_batches * 5
+    elif data_ratio < 5:  # low data regime
+      return config.num_batches // 5
+    else:
+      return config.num_batches
+
   agent_config = enn_agent.VanillaEnnConfig(
       enn_ctor=make_enn,
       loss_ctor=make_loss,
-      num_batches=config.num_batches,
+      num_batches=batch_strategy,
       optimizer=optax.adam(config.learning_rate),
       seed=config.seed,
   )
   return enn_agent.VanillaEnnAgent(agent_config)
-
-
-def base_sweep() -> Sequence[BBBConfig]:
-  """Generates the bbb sweep over network parameters."""
-  sweep = []
-  for learning_rate in [1e-3, 3e-3]:
-    for sigma_1 in [0.3, 0.5, 0.7, 1, 2]:
-      for num_batches in [1000, 2000]:
-        sweep.append(
-            BBBConfig(
-                learning_rate=learning_rate,
-                sigma_1=sigma_1,
-                num_batches=num_batches))
-  return tuple(sweep)
-
-
-def prior_sweep() -> Sequence[BBBConfig]:
-  """Generates the bbb sweep over prior parameters."""
-  sweep = []
-  for sigma_1 in [1, 2, 4]:
-    for sigma_2 in [0.3, 0.5, 0.7]:
-      for mixture_scale in [0.5]:
-        sweep.append(BBBConfig(sigma_1=sigma_1,
-                               sigma_2=sigma_2,
-                               mixture_scale=mixture_scale))
-  return tuple(sweep)
-
-
-def network_sweep() -> Sequence[BBBConfig]:
-  """Generates the bbb sweep over network architecture for paper."""
-  sweep = []
-  for hidden_sizes in [(50, 50), (100, 100), (50, 50, 50)]:
-    sweep.append(BBBConfig(hidden_sizes=hidden_sizes))
-  return tuple(sweep)
-
-
-def combined_sweep() -> Sequence[BBBConfig]:
-  return tuple(base_sweep()) + tuple(prior_sweep()) + tuple(network_sweep())
-
-
-def paper_agent() -> factories_base.PaperAgent:
-  return factories_base.PaperAgent(
-      default=BBBConfig(),
-      ctor=make_agent,
-      sweep=combined_sweep,
-  )

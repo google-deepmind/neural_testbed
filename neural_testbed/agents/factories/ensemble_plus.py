@@ -26,7 +26,6 @@ from enn import networks
 import jax.numpy as jnp
 from neural_testbed import base as testbed_base
 from neural_testbed.agents import enn_agent
-from neural_testbed.agents.factories import base as factories_base
 import numpy as np
 
 
@@ -41,6 +40,7 @@ class EnsembleConfig:
   temp_scale_prior: str = 'sqrt'  # How to scale prior with temperature
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
   num_batches: int = 1_000  # Number of SGD steps
+  batch_strategy: bool = False  # Whether to scale num_batches with data ratio
   seed: int = 0  # Initialization seed
 
 
@@ -88,53 +88,21 @@ def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
     loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 
+  def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:
+    if not config.batch_strategy:
+      return config.num_batches
+    data_ratio = prior.num_train / prior.input_dim
+    if data_ratio > 500:  # high data regime
+      return config.num_batches * 5
+    elif data_ratio < 5:  # low data regime
+      return config.num_batches // 5
+    else:
+      return config.num_batches
+
   agent_config = enn_agent.VanillaEnnConfig(
       enn_ctor=make_enn,
       loss_ctor=make_loss,
-      num_batches=config.num_batches,
-      seed=config.seed,
-  )
+      num_batches=batch_strategy,
+      seed=config.seed,)
+
   return enn_agent.VanillaEnnAgent(agent_config)
-
-
-def basic_sweep() -> Sequence[EnsembleConfig]:
-  """Basic sweep over hyperparams."""
-  sweep = []
-  for num_ensemble in [1, 3, 10, 30, 100]:
-    sweep.append(EnsembleConfig(
-        num_ensemble=num_ensemble,
-    ))
-  return tuple(sweep)
-
-
-def boot_sweep() -> Sequence[EnsembleConfig]:
-  """Basic sweep over hyperparams."""
-  sweep = []
-  for distribution in ['none', 'bernoulli', 'exponential']:
-    sweep.append(EnsembleConfig(
-        distribution=distribution,
-    ))
-  return tuple(sweep)
-
-
-def weight_decay_sweep() -> Sequence[EnsembleConfig]:
-  """Basic sweep over hyperparams."""
-  sweep = []
-  for l2_weight_decay in [0.1, 0.3, 1, 3, 10]:
-    sweep.append(EnsembleConfig(
-        l2_weight_decay=l2_weight_decay,
-    ))
-  return tuple(sweep)
-
-
-def combined_sweep() -> Sequence[EnsembleConfig]:
-  return tuple(basic_sweep()) + tuple(boot_sweep()) + tuple(
-      weight_decay_sweep())
-
-
-def paper_agent() -> factories_base.PaperAgent:
-  return factories_base.PaperAgent(
-      default=EnsembleConfig(),
-      ctor=make_agent,
-      sweep=combined_sweep,
-  )

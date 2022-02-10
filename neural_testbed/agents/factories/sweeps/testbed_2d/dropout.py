@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Factory methods for MC Dropout agent."""
+"""Sweeps for MC Dropout agent."""
 
 import dataclasses
 from typing import Sequence
@@ -38,9 +38,8 @@ class McDropoutConfig:
   dropout_input: bool = False  # Whether to have dropout for the input layer
   exclude_bias_l2: bool = False  # Whether to exclude bias from regularization
   adaptive_weight_scale: bool = True  # Whether to scale with prior
-  hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for neural network
+  hidden_sizes: Sequence[int] = (100, 100)  # Hidden sizes for neural network
   num_batches: int = 1000  # Number of SGD steps
-  batch_strategy: bool = True  # Whether to scale num_batches with data ratio
   learning_rate: float = 1e-3  # Learning rate for adam optimizer
   seed: int = 0  # Initialization seed
 
@@ -85,24 +84,13 @@ def make_mc_dropout_agent(
     loss_fn = losses.add_l2_weight_decay(loss_fn, scale, predicate)
     return loss_fn
 
-  def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:
-    if not config.batch_strategy:
-      return config.num_batches
-    data_ratio = prior.num_train / prior.input_dim
-    if data_ratio > 500:  # high data regime
-      return config.num_batches * 5
-    elif data_ratio < 5:  # low data regime
-      return config.num_batches // 5
-    else:
-      return config.num_batches
-
   agent_config = agents.VanillaEnnConfig(
       enn_ctor=make_enn,
       loss_ctor=make_loss,
       optimizer=optax.adam(config.learning_rate),
-      num_batches=batch_strategy,
-      seed=config.seed,
-  )
+      num_batches=config.num_batches,
+      seed=config.seed,)
+
   return agents.VanillaEnnAgent(agent_config)
 
 
@@ -122,7 +110,7 @@ def l2reg_sweep() -> Sequence[McDropoutConfig]:
   """Generates the dropout sweep over l2 regularization parameters for paper."""
   sweep = []
   for adaptive_weight_scale in [True, False]:
-    for length_scale in [0.01, 0.1, 0.3, 1, 3, 10]:
+    for length_scale in [1, 3, 10]:
       sweep.append(
           McDropoutConfig(
               adaptive_weight_scale=adaptive_weight_scale,
@@ -133,26 +121,13 @@ def l2reg_sweep() -> Sequence[McDropoutConfig]:
 def network_sweep() -> Sequence[McDropoutConfig]:
   """Generates the dropout sweep over dropping parameters for paper."""
   sweep = []
-  for hidden_sizes in [(50, 50), (100, 100)]:
+  for hidden_sizes in [(50, 50), (100, 100), (50, 50, 50)]:
     sweep.append(McDropoutConfig(hidden_sizes=hidden_sizes))
   return tuple(sweep)
 
 
-def batch_sweep() -> Sequence[McDropoutConfig]:
-  """Basic sweep over hyperparams."""
-  sweep = []
-  for batch_strategy in [True, False]:
-    for num_batches in [500, 1000]:
-      sweep.append(
-          McDropoutConfig(
-              batch_strategy=batch_strategy,
-              num_batches=num_batches))
-  return tuple(sweep)
-
-
 def combined_sweep() -> Sequence[McDropoutConfig]:
-  return tuple(droprate_sweep()) + tuple(l2reg_sweep()) + tuple(
-      network_sweep()) + tuple(batch_sweep())
+  return tuple(droprate_sweep()) + tuple(l2reg_sweep()) + tuple(network_sweep())
 
 
 def paper_agent() -> factories_base.PaperAgent:

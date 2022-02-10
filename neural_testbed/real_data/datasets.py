@@ -17,7 +17,8 @@
 
 """Storing the name of supported datasets and their information."""
 import dataclasses
-from typing import Dict
+import os
+from typing import List
 
 
 @dataclasses.dataclass
@@ -99,8 +100,8 @@ def regression_datasets():
   return datasets
 
 
-def original_structured_datasets():
-  """Returns a dictionary of original structured datasets currently supported."""
+def structured_datasets():
+  """Returns a dictionary of structured datasets currently supported."""
   datasets = {
       'iris':
           DatasetInfo(
@@ -127,8 +128,8 @@ def original_structured_datasets():
   return datasets
 
 
-def original_image_datasets():
-  """Returns a dictionary of original image datasets currently supported."""
+def image_datasets():
+  """Returns a dictionary of image datasets currently supported."""
   dataset = {
       'cmaterdb':
           DatasetInfo(
@@ -183,43 +184,96 @@ def original_image_datasets():
   return dataset
 
 
-def data_variant_datasets(
-    datasets: Dict[str, DatasetInfo]) -> Dict[str, DatasetInfo]:
-  """Returns real datasets with original and limited numbers of train data."""
-  sweep = {**datasets}
-  for ds_name, info in datasets.items():
-    for num_train in [1, 10, 100, 1000, 10_000]:
-      num_train = min(num_train, info.num_train)
-      data_limited_ds_name = ds_name + f'-num_train={num_train}'
-      data_limited_info = DatasetInfo(
-          dataset_name=info.dataset_name,
-          num_classes=info.num_classes,
-          input_dim=info.input_dim,
-          num_train=num_train,
-          num_test=info.num_test)
-      sweep[data_limited_ds_name] = data_limited_info
-
-  return sweep
+@dataclasses.dataclass
+class UCIDataSpec:
+  path: str
+  desc: str
+  label: str
+  excluded: List[str]
 
 
-ORIGINAL_STRUCTURED_DATASETS = tuple(original_structured_datasets().keys())
-ORIGINAL_IMAGE_DATASETS = tuple(original_image_datasets().keys())
-ORIGINAL_CLASSIFICATION_DATASETS = ORIGINAL_STRUCTURED_DATASETS + ORIGINAL_IMAGE_DATASETS
+# TODO(author3): Avoid hard-coding directory string so it's user-specified.
+UCI_BASE_DIR = '/tmp/uci_datasets'
+# BEGIN GOOGLE-INTERNAL
+UCI_BASE_DIR = '/path_to_regression_dataset_repo/distbelief/uci_datasets/'
+# END GOOGLE-INTERNAL
+DATA_SPECS = {
+    'boston_housing': UCIDataSpec(
+        path=os.path.join(UCI_BASE_DIR, 'boston_housing.csv'),
+        desc=('The Boston housing data was collected in 1978 and each of the '
+              '506 entries represent aggregated data about 14 features for '
+              'homes from various suburbs in Boston, Massachusetts.'),
+        label='MEDV',
+        excluded=[]),
+    'concrete_strength': UCIDataSpec(
+        path=os.path.join(UCI_BASE_DIR, 'concrete_strength.csv'),
+        desc=('The Boston housing data was collected in 1978 and each of the '
+              '506 entries represent aggregated data about 14 features for '
+              'homes from various suburbs in Boston, Massachusetts.'),
+        label='concrete_compressive_strength',
+        excluded=[]),
+    'energy_efficiency': UCIDataSpec(
+        path=os.path.join(UCI_BASE_DIR, 'energy_efficiency.csv'),
+        desc=('This study looked into assessing the heating load and cooling '
+              'load requirements of buildings (that is, energy efficiency) as '
+              'a function of building parameters. **Heating load only**.'),
+        label='Y1',
+        excluded=['Y2']),
+    'naval_propulsion': UCIDataSpec(
+        path=os.path.join(UCI_BASE_DIR, 'naval_propulsion.csv'),
+        desc=('Data have been generated from a sophisticated simulator of a '
+              'Gas Turbines (GT), mounted on a Frigate characterized by a '
+              'Combined Diesel eLectric And Gas (CODLAG) propulsion plant '
+              'type. **GT Turbine decay state coefficient only**'),
+        label='GT Turbine decay state coefficient',
+        excluded=['GT Compressor decay state coefficient']),
+    'kin8nm': UCIDataSpec(
+        path=os.path.join(UCI_BASE_DIR, 'kin8nm.csv'),
+        desc=('This is data set is concerned with the forward kinematics of '
+              'an 8 link robot arm. Among the existing variants of this data '
+              'set we have used the variant 8nm, which is known to be highly '
+              'non-linear and medium noisy.'),
+        label='y',
+        excluded=[]),
+    'power_plant': UCIDataSpec(
+        path=os.path.join(UCI_BASE_DIR, 'power_plant.csv'),
+        desc=('The Boston housing data was collected in 1978 and each of the '
+              '506 entries represent aggregated data about 14 features for '
+              'homes from various suburbs in Boston, Massachusetts.'),
+        label='PE',
+        excluded=[]),
+    'protein_structure': UCIDataSpec(
+        path=os.path.join(UCI_BASE_DIR, 'protein_structure.csv'),
+        desc=('This is a data set of Physicochemical Properties of Protein '
+              'Tertiary Structure. The data set is taken from CASP 5-9. There '
+              'are 45730 decoys and size varying from 0 to 21 armstrong.'),
+        label='RMSD',
+        excluded=[]),
+    'wine': UCIDataSpec(
+        path=os.path.join(UCI_BASE_DIR, 'wine.csv'),
+        desc=('The dataset is related to red variant of the Portuguese '
+              '"Vinho Verde" wine. **NB contains red wine examples only**'),
+        label='quality',
+        excluded=[]),
+    'yacht_hydrodynamics': UCIDataSpec(
+        path=os.path.join(UCI_BASE_DIR, 'yacht_hydrodynamics.csv'),
+        desc=('Delft data set, used to predict the hydodynamic performance of '
+              'sailing yachts from dimensions and velocity.'),
+        label='Residuary resistance per unit weight of displacement',
+        excluded=[])
+}
 
-STRUCTURED_DATASETS_SETTINGS = data_variant_datasets(
-    original_structured_datasets())
-STRUCTURED_DATASETS = tuple(STRUCTURED_DATASETS_SETTINGS.keys())
-IMAGE_DATASETS_SETTINGS = data_variant_datasets(original_image_datasets())
-IMAGE_DATASETS = tuple(IMAGE_DATASETS_SETTINGS.keys())
+
+STRUCTURED_DATASETS = tuple(structured_datasets().keys())
+IMAGE_DATASETS = tuple(image_datasets().keys())
 CLASSIFICATION_DATASETS = STRUCTURED_DATASETS + IMAGE_DATASETS
 
 REGRESSION_DATASETS = tuple(regression_datasets().keys())
-REGRESSION_DATASETS_SETTINGS = regression_datasets()
-
 
 DATASETS_SETTINGS = {
-    **STRUCTURED_DATASETS_SETTINGS,
-    **IMAGE_DATASETS_SETTINGS,
-    **REGRESSION_DATASETS_SETTINGS,
+    **image_datasets(),
+    **structured_datasets(),
+    **regression_datasets(),
 }
-DATASETS = tuple(DATASETS_SETTINGS.keys())
+
+DATASETS = CLASSIFICATION_DATASETS + REGRESSION_DATASETS

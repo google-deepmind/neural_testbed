@@ -14,16 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Exposing public methods for approximate posterior training."""
+"""Sweeps for K-nearest neighbors agent."""
+
+from typing import Sequence
 
 from neural_testbed.agents.factories import base as factories_base
-from neural_testbed.agents.factories import baselines
-from neural_testbed.agents.factories import bbb
-from neural_testbed.agents.factories import deep_kernel
-from neural_testbed.agents.factories import dropout
-from neural_testbed.agents.factories import ensemble
-from neural_testbed.agents.factories import ensemble_plus
-from neural_testbed.agents.factories import hypermodel
 from neural_testbed.agents.factories import knn
-from neural_testbed.agents.factories import random_forest
-from neural_testbed.agents.factories import sgmcmc
+
+
+def knn_sweep() -> Sequence[knn.KnnConfig]:
+  sweep = []
+  for num_neighbors in [1, 5, 10, 30, 50, 100]:
+    for weighting in ['uniform', 'distance']:
+      sweep.append(knn.KnnConfig(num_neighbors, weighting))
+  return tuple(sweep)
+
+
+def paper_agent() -> factories_base.PaperAgent:
+  return factories_base.PaperAgent(
+      default=knn.KnnConfig(),
+      ctor=knn.make_agent,
+      sweep=knn_sweep,
+  )

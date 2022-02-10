@@ -16,7 +16,7 @@
 # ============================================================================
 """A fake data sampler for classification based on real data."""
 
-from typing import Tuple
+from typing import Tuple, Callable
 
 import chex
 import jax
@@ -24,20 +24,21 @@ import jax.numpy as jnp
 from neural_testbed import base as testbed_base
 from neural_testbed import likelihood
 
+# key, num_samples -> Data
+Sampler = Callable[[chex.PRNGKey, int], testbed_base.Data]
+SamplerCtor = Callable[[testbed_base.Data], Sampler]
+
 
 class RealDataSampler(likelihood.GenerativeDataSampler):
   """A fake data sampler for classification/regression based on real data."""
 
   def __init__(self,
                train_data: testbed_base.Data,
-               test_data: testbed_base.Data,
+               test_sampler: Sampler,
                tau: int = 1):
     self._train_data = train_data
-    self._test_data = test_data
     self._tau = tau
-    self._x_test = jnp.array(self._test_data.x)
-    self._y_test = jnp.array(self._test_data.y)
-    self._num_test_data = self._x_test.shape[0]
+    self._test_sampler = test_sampler
 
   @property
   def train_data(self) -> testbed_base.Data:
@@ -47,7 +48,6 @@ class RealDataSampler(likelihood.GenerativeDataSampler):
   def test_data(self, key: chex.PRNGKey) -> Tuple[testbed_base.Data, float]:
     """Returns a batch of test data.
 
-    This method is called using self._num_test_data consecutive seeds.
     Args:
       key: A key for generating random numbers.
 
@@ -59,7 +59,54 @@ class RealDataSampler(likelihood.GenerativeDataSampler):
       log-likelihood under posterior. Hence, we set it to 0 and by doing so, we
       can still use one formula in the testbed for calculating kl estimate.
     """
-    data_index = jax.random.randint(key, [self._tau], 0, self._num_test_data)
-    x_test = self._x_test[data_index, :]
-    y_test = self._y_test[data_index, :]
-    return testbed_base.Data(x=x_test, y=y_test), 0.
+    test_data = self._test_sampler(key, self._tau)
+    return test_data, 0.
+
+
+def make_local_sampler(data: testbed_base.Data, kappa: int = 2) -> Sampler:
+  """Returns a sampler which samples based on kappa anchor points.
+
+  To make this work in jax we actually implement this by first sampling kappa
+  anchor points, then randomly the tau batch points from these kappa anchors
+  (with replacement).
+
+  Args:
+    data: test data.
+    kappa: number of anchor reference points. If tau is less than kappa we
+      default to sampling tau points.
+
+  Returns:
+    Local sampler of data indices.
+  """
+  x_test = jnp.array(data.x)
+  y_test = jnp.array(data.y)
+  num_data = y_test.shape[0]
+
+  def local_sampler(key: chex.PRNGKey, tau: int) -> testbed_base.Data:
+    anchor_key, sample_key = jax.random.split(key, 2)
+    # Sample anchor data indices
+    anchor_idx = jax.random.randint(anchor_key, [kappa], 0, num_data)
+
+    # Index into these anchor indices
+    sample_idx = jax.random.randint(sample_key, [tau], 0, kappa)
+    repeat_idx = anchor_idx[sample_idx]
+    chex.assert_shape(repeat_idx, [tau])
+
+    return testbed_base.Data(x=x_test[repeat_idx, :], y=y_test[repeat_idx, :])
+
+  return local_sampler
+
+
+def make_global_sampler(data: testbed_base.Data)-> Sampler:
+  """Returns a sampler which samples uniformly from data points."""
+  x_test = jnp.array(data.x)
+  y_test = jnp.array(data.y)
+  num_data = y_test.shape[0]
+
+  def global_sampler(key: chex.PRNGKey, tau: int) -> testbed_base.Data:
+    sample_idx = jax.random.randint(key, [tau], 0, num_data)
+    chex.assert_shape(sample_idx, [tau])
+
+    return testbed_base.Data(x=x_test[sample_idx, :], y=y_test[sample_idx, :])
+
+  return global_sampler

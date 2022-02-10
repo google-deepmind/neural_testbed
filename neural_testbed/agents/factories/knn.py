@@ -17,11 +17,9 @@
 """Factory methods for K-nearest neighbors baseline agent."""
 
 import dataclasses
-from typing import Sequence
 
 from enn import base as enn_base
 from neural_testbed import base as testbed_base
-from neural_testbed.agents.factories import base as factories_base
 import numpy as np
 from sklearn import neighbors
 
@@ -65,19 +63,3 @@ def make_agent(config: KnnConfig) -> testbed_base.TestbedAgent:
     return enn_sampler
 
   return knn_agent
-
-
-def knn_sweep() -> Sequence[KnnConfig]:
-  sweep = []
-  for num_neighbors in [1, 5, 10, 30, 50, 100]:
-    for weighting in ['uniform', 'distance']:
-      sweep.append(KnnConfig(num_neighbors, weighting))
-  return tuple(sweep)
-
-
-def paper_agent() -> factories_base.PaperAgent:
-  return factories_base.PaperAgent(
-      default=KnnConfig(),
-      ctor=make_agent,
-      sweep=knn_sweep,
-  )

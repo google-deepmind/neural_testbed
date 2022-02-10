@@ -41,7 +41,6 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 from neural_testbed import base as testbed_base
-from neural_testbed.agents.factories import base as factories_base
 import optax
 
 
@@ -239,23 +238,3 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
     return enn_sampler
 
   return deep_kernel_agent
-
-
-def deep_kernel_sweep() -> Sequence[DeepKernelConfig]:
-  """Basic sweep over hyperparams."""
-  sweep = []
-  for scale_factor in [1., 2., 3., 4., 5., 6.]:
-    for sigma_squared_factor in [0.5, 1., 2., 3., 4.]:
-      sweep.append(
-          DeepKernelConfig(
-              scale_factor=scale_factor,
-              sigma_squared_factor=sigma_squared_factor))
-  return tuple(sweep)
-
-
-def paper_agent() -> factories_base.PaperAgent:
-  return factories_base.PaperAgent(
-      default=DeepKernelConfig(),
-      ctor=make_agent,
-      sweep=deep_kernel_sweep,
-  )

@@ -18,7 +18,7 @@
 
 from absl import app
 from absl import flags
-from neural_testbed.agents import factories
+from neural_testbed.agents.factories.sweeps import testbed_2d as factories
 from neural_testbed.bandit import agents
 from neural_testbed.bandit import thompson
 
