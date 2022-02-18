@@ -22,7 +22,7 @@ from typing import Dict
 import chex
 import haiku as hk
 import jax
-from neural_tangents.utils import typing as nt_types
+from neural_tangents._src.utils import typing as nt_types
 from neural_testbed import base as testbed_base
 from neural_testbed import likelihood
 from neural_testbed.generative import classification_envlikelihood
@@ -183,7 +183,7 @@ def plot_1d_classification(true_model,  # TODO(author2): add typing
 
 
 def investigate_1d_regression_model(
-    kernel_fn: nt_types.KernelFn = nt_kernels.make_benchmark_kernel(),
+    kernel_fn: nt_types.AnalyticKernelFn = nt_kernels.make_benchmark_kernel(),
     num_train: int = 5) -> gg.ggplot:
   """Plots the 1D posterior for random training data in regression model.
 

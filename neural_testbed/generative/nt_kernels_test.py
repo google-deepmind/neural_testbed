@@ -60,7 +60,7 @@ class NtKernelsTest(parameterized.TestCase):
       return jnp.allclose(x, x.T, rtol=rtol, atol=atol)
 
     def is_pos_semi_definite(x: jnp.ndarray):
-      return jnp.all(jnp.linalg.eigvals(x) >= 0)
+      return jnp.all(jnp.linalg.eigvals(x) >= -1e-10)
 
     # Generate benchmark kernel
     kernel_fn = nt_kernels.make_benchmark_kernel()

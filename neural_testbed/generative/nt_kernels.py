@@ -20,7 +20,7 @@
 import dataclasses
 
 from neural_tangents import stax
-from neural_tangents.utils import typing as nt_types
+from neural_tangents._src.utils import typing as nt_types
 import numpy as np
 import typing_extensions
 
@@ -28,7 +28,7 @@ import typing_extensions
 class KernelCtor(typing_extensions.Protocol):
   """Interface for generating a kernel for a given input dimension."""
 
-  def __call__(self, input_dim: int) -> nt_types.KernelFn:
+  def __call__(self, input_dim: int) -> nt_types.AnalyticKernelFn:
     """Generates a kernel for a given input dimension."""
 
 
@@ -41,7 +41,7 @@ class MLPKernelCtor(KernelCtor):
   def __post_init__(self):
     assert self.num_hidden_layers >= 1, 'Must have at least one hidden layer.'
 
-  def __call__(self, input_dim: int = 1) -> nt_types.KernelFn:
+  def __call__(self, input_dim: int = 1) -> nt_types.AnalyticKernelFn:
     """Generates a kernel for a given input dimension."""
     limit_width = 50  # Implementation detail of neural_testbed, unused.
     layers = [
@@ -56,13 +56,13 @@ class MLPKernelCtor(KernelCtor):
     return kernel
 
 
-def make_benchmark_kernel(input_dim: int = 1) -> nt_types.KernelFn:
+def make_benchmark_kernel(input_dim: int = 1) -> nt_types.AnalyticKernelFn:
   """Creates the benchmark kernel used in leaderboard = 2-layer ReLU."""
   kernel_ctor = MLPKernelCtor(num_hidden_layers=2, activation=stax.Relu())
   return kernel_ctor(input_dim)
 
 
-def make_linear_kernel(input_dim: int = 1) -> nt_types.KernelFn:
+def make_linear_kernel(input_dim: int = 1) -> nt_types.AnalyticKernelFn:
   """Generate a linear GP kernel for testing putposes."""
   layers = [
       stax.Dense(1, W_std=1, b_std=1 / np.sqrt(input_dim)),
