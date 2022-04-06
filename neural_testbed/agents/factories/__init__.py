@@ -23,6 +23,7 @@ from neural_testbed.agents.factories import deep_kernel
 from neural_testbed.agents.factories import dropout
 from neural_testbed.agents.factories import ensemble
 from neural_testbed.agents.factories import ensemble_plus
+from neural_testbed.agents.factories import epinet
 from neural_testbed.agents.factories import hypermodel
 from neural_testbed.agents.factories import knn
 from neural_testbed.agents.factories import random_forest

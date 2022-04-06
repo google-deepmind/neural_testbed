@@ -34,7 +34,7 @@ import optax
 class HypermodelConfig:
   """Configuration for hypermodel agent."""
   index_dim: int = 5  # Index dimension
-  num_index_samples: int = 128  # Number of index samples to average over
+  num_index_samples: int = 16  # Number of index samples to average over
   prior_scale: float = 1  # Scale for additive prior function
   l2_weight_decay: float = 1.  # Weight decay
   adaptive_weight_scale: bool = True  # Whether to scale with prior knowledge
