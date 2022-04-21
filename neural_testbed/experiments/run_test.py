@@ -23,6 +23,7 @@ from neural_testbed import leaderboard
 from neural_testbed.experiments import run
 
 FLAGS = flags.FLAGS
+FLAGS.mark_as_parsed()
 
 
 class RunTest(parameterized.TestCase):
