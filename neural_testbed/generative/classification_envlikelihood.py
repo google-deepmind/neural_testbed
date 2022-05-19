@@ -19,10 +19,10 @@
 from typing import Callable, Optional, Tuple
 
 import chex
+from enn import metrics
 import haiku as hk
 import jax
 import jax.numpy as jnp
-
 from neural_testbed import base as testbed_base
 from neural_testbed import likelihood
 
@@ -137,9 +137,7 @@ def make_weibull_sampler(input_dim: int) -> XGenerator:
   return weibull_generator
 
 
-def make_local_sampler(input_dim: int,
-                       kappa: int = 2,
-                       sigma: float = 0.01) -> XGenerator:
+def make_polyadic_sampler(input_dim: int, kappa: int = 2) -> XGenerator:
   """Samples with local structure centered around kappa N(0, 1) anchor points.
 
   To make this work in jax we actually implement this by first sampling kappa
@@ -150,14 +148,13 @@ def make_local_sampler(input_dim: int,
     input_dim: input dimension.
     kappa: number of anchor reference points. If tau is less than kappa we
       default to sampling tau points.
-    sigma: standard deviation of noise around the reference points.
 
   Returns:
-    Local sampling XGenerator.
+    Polyadic sampling XGenerator.
   """
 
-  def local_generator(key: chex.PRNGKey, tau: int) -> chex.Array:
-    anchor_key, sample_key, noise_key = jax.random.split(key, 3)
+  def polyadic_generator(key: chex.PRNGKey, tau: int) -> chex.Array:
+    anchor_key, sample_key = jax.random.split(key)
     # Sample anchor points
     anchor_x = jax.random.normal(anchor_key, [kappa, input_dim])
 
@@ -165,11 +162,9 @@ def make_local_sampler(input_dim: int,
     sample_idx = jax.random.randint(sample_key, [tau], 0, kappa)
     repeat_x = anchor_x[sample_idx]
     chex.assert_shape(repeat_x, [tau, input_dim])
+    return repeat_x
 
-    # Return with noise
-    return repeat_x + sigma * jax.random.normal(noise_key, [tau, input_dim])
-
-  return local_generator
+  return polyadic_generator
 
 
 def sample_gaussian_data(logit_fn: LogitFn,
@@ -198,5 +193,5 @@ def sample_gaussian_data(logit_fn: LogitFn,
   data = testbed_base.Data(x=x_train, y=y_train)
 
   # Compute the log likelihood with respect to the environment
-  log_likelihood = likelihood.categorical_log_likelihood(train_probs, y_train)
+  log_likelihood = metrics.categorical_log_likelihood(train_probs, y_train)
   return data, log_likelihood

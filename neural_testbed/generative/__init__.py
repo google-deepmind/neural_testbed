@@ -18,8 +18,9 @@
 
 # Classification w.r.t environment likelihood
 from neural_testbed.generative.classification_envlikelihood import ClassificationEnvLikelihood
+from neural_testbed.generative.classification_envlikelihood import LogitFn
 from neural_testbed.generative.classification_envlikelihood import make_gaussian_sampler
-from neural_testbed.generative.classification_envlikelihood import make_local_sampler
+from neural_testbed.generative.classification_envlikelihood import make_polyadic_sampler
 from neural_testbed.generative.classification_envlikelihood import make_weibull_sampler
 from neural_testbed.generative.classification_envlikelihood import XGenerator
 

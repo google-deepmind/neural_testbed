@@ -26,6 +26,7 @@ from typing import Tuple
 
 import chex
 from enn.extra import kmeans
+from enn.metrics import base as metrics_base
 import jax
 import jax.numpy as jnp
 import jax.scipy.special as jsp
@@ -49,7 +50,7 @@ class ClusterAlg(typing_extensions.Protocol):
 
 
 @dataclasses.dataclass
-class JointLLCalculatorProjection(likelihood_base.MetricCalculator):
+class JointLLCalculatorProjection(metrics_base.MetricCalculator):
   """Computes joint ll aggregated over enn samples using projection method.
 
   Depending on data batch_size (can be inferred from logits and labels), this

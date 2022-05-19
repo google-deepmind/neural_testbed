@@ -16,6 +16,8 @@
 
 """Convenient factory methods to help build generative models."""
 
+from typing import Callable
+
 import chex
 import haiku as hk
 import jax
@@ -30,6 +32,7 @@ def make_2layer_mlp_logit_fn(
     hidden: int,
     num_classes: int,
     key: chex.PRNGKey,
+    activation: Callable[[chex.Array], chex.Array] = jax.nn.relu,
 ) -> class_env.LogitFn:
   """Factory method to create a generative model around a 2-layer MLP."""
 
@@ -40,9 +43,9 @@ def make_2layer_mlp_logit_fn(
         output_size=hidden,
         b_init=hk.initializers.RandomNormal(1./jnp.sqrt(input_dim)),
     )(x)
-    y = jax.nn.relu(y)
+    y = activation(y)
     y = hk.Linear(hidden)(y)
-    y = jax.nn.relu(y)
+    y = activation(y)
     return hk.Linear(num_classes)(y)
 
   transformed = hk.without_apply_rng(hk.transform(net_fn))

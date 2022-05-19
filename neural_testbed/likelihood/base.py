@@ -20,8 +20,6 @@ import abc
 from typing import Tuple
 
 import chex
-import jax
-import jax.numpy as jnp
 from neural_testbed import base as testbed_base
 import typing_extensions
 
@@ -29,7 +27,8 @@ import typing_extensions
 class GenerativeDataSampler(abc.ABC):
   """An interface for generative test/train data."""
 
-  @abc.abstractproperty
+  @property
+  @abc.abstractmethod
   def train_data(self) -> testbed_base.Data:
     """Access training data from the GP for ENN training."""
 
@@ -78,41 +77,3 @@ class SampleBasedTestbed(testbed_base.TestbedProblem):
   def prior_knowledge(self) -> testbed_base.PriorKnowledge:
     return self._prior_knowledge
 
-
-def average_sampled_log_likelihood(x: chex.Array) -> float:
-  """Computes average log likelihood from samples.
-
-  This method takes several samples of log-likelihood, converts
-  them to likelihood (by exp), then takes the average, then
-  returns the logarithm over the average  LogSumExp
-  trick is used for numerical stability.
-
-  Args:
-    x: chex.Array
-  Returns:
-    log-mean-exponential
-  """
-  return jax.lax.cond(
-      jnp.isneginf(jnp.max(x)),
-      lambda x: -jnp.inf,
-      lambda x: jnp.log(jnp.mean(jnp.exp(x - jnp.max(x)))) + jnp.max(x),
-      operand=x,
-  )
-
-
-class MetricCalculator(typing_extensions.Protocol):
-  """Interface for evaluation of multiple posterior samples based on a metric."""
-
-  def __call__(self, logits: chex.Array, labels: chex.Array) -> float:
-    """Calculates a metric based on logits and labels.
-
-    Args:
-      logits: An array of shape [A, B, C] where B is the batch size of data, C
-        is the number of outputs per data (for classification, this is
-        equal to number of classes), and A is the number of random samples for
-        each data.
-      labels: An array of shape [B, 1] where B is the batch size of data.
-
-    Returns:
-      A float number specifies the value of the metric.
-    """

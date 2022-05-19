@@ -21,12 +21,12 @@ import functools
 from typing import Dict, Optional, Tuple
 
 import chex
+from enn import metrics
 import jax
 import jax.numpy as jnp
 from neural_testbed import base as testbed_base
 from neural_testbed.likelihood import base as likelihood_base
 from neural_testbed.likelihood import utils
-from tensorflow_probability.substrates import jax as tfp
 
 
 def compute_discrete_kl(p: chex.Array, q: chex.Array) -> float:
@@ -37,99 +37,6 @@ def compute_discrete_kl(p: chex.Array, q: chex.Array) -> float:
   assert jnp.shape(p) == jnp.shape(q)
 
   return jnp.nansum(jnp.multiply(p, jnp.log(p) - jnp.log(q)))
-
-
-def categorical_log_likelihood(probs: chex.Array, labels: chex.Array) -> float:
-  """Computes joint log likelihood based on probs and labels."""
-  num_data, unused_num_classes = probs.shape
-  assert len(labels) == num_data
-  assigned_probs = probs[jnp.arange(num_data), jnp.squeeze(labels)]
-  return jnp.sum(jnp.log(assigned_probs))
-
-
-def calculate_marginal_ll(logits: chex.Array, labels: chex.Array) -> float:
-  """Computes marginal log likelihood (ll) aggregated over enn samples."""
-  unused_num_enn_samples, num_data, num_classes = logits.shape
-  chex.assert_shape(labels, (num_data, 1))
-
-  probs = jnp.mean(jax.nn.softmax(logits), axis=0)
-  chex.assert_shape(probs, [num_data, num_classes])
-
-  return categorical_log_likelihood(probs, labels) / num_data
-
-
-def calculate_joint_ll(logits: chex.Array, labels: chex.Array) -> float:
-  """Computes joint log likelihood (ll) aggregated over enn samples.
-
-  Depending on data batch_size (can be inferred from logits and labels), this
-  function computes joint ll for tau=batch_size aggregated over enn samples. If
-  num_data is one, this function computes marginal ll.
-
-  Args:
-    logits: [num_enn_sample, num_data, num_classes]
-    labels: [num_data, 1]
-
-  Returns:
-    marginal log likelihood
-  """
-  num_enn_samples, tau, num_classes = logits.shape
-  chex.assert_shape(labels, (tau, 1))
-
-  class_probs = jax.nn.softmax(logits)
-  chex.assert_shape(class_probs, (num_enn_samples, tau, num_classes))
-
-  batched_ll = jax.vmap(categorical_log_likelihood, in_axes=[0, None])
-  sampled_ll = batched_ll(class_probs, labels)
-  return likelihood_base.average_sampled_log_likelihood(sampled_ll)
-
-
-@dataclasses.dataclass
-class CalibrationErrorCalculator(likelihood_base.MetricCalculator):
-  """Computes expected calibration error (ece) aggregated over enn samples."""
-  num_bins: int
-
-  def __call__(self, logits: chex.Array, labels: chex.Array) -> float:
-    """Returns ece."""
-    chex.assert_rank(logits, 3)
-    unused_num_enn_samples, num_data, num_classes = logits.shape
-    chex.assert_shape(labels, [num_data, 1])
-
-    class_probs = jax.nn.softmax(logits)
-    mean_class_prob = jnp.mean(class_probs, axis=0)
-    chex.assert_shape(mean_class_prob, [num_data, num_classes])
-
-    predictions = jnp.argmax(mean_class_prob, axis=1)[:, None]
-    chex.assert_shape(predictions, labels.shape)
-
-    # ece
-    mean_class_logits = jnp.log(mean_class_prob)
-    chex.assert_shape(mean_class_logits, (num_data, num_classes))
-    labels_true = jnp.squeeze(labels, axis=-1)
-    chex.assert_shape(labels_true, (num_data,))
-    labels_predicted = jnp.squeeze(predictions, axis=-1)
-    chex.assert_shape(labels_predicted, (num_data,))
-    return tfp.stats.expected_calibration_error(
-        num_bins=self.num_bins,
-        logits=mean_class_logits,
-        labels_true=labels_true,
-        labels_predicted=labels_predicted,
-    )
-
-
-def calculate_accuracy(logits: chex.Array, labels: chex.Array) -> float:
-  """Computes classification accuracy (acc) aggregated over enn samples."""
-  chex.assert_rank(logits, 3)
-  unused_num_enn_samples, num_data, num_classes = logits.shape
-  chex.assert_shape(labels, [num_data, 1])
-
-  class_probs = jax.nn.softmax(logits)
-  mean_class_prob = jnp.mean(class_probs, axis=0)
-  chex.assert_shape(mean_class_prob, [num_data, num_classes])
-
-  predictions = jnp.argmax(mean_class_prob, axis=1)[:, None]
-  chex.assert_shape(predictions, [num_data, 1])
-
-  return jnp.mean(predictions == labels)
 
 
 @dataclasses.dataclass
@@ -169,7 +76,7 @@ class CategoricalKLSampledXSampledY(likelihood_base.SampleBasedKL):
       """Computes KL estimate on a single instance of test data."""
       data, true_ll = test_data_fn(key)
       logits = get_logits(data.x)
-      return true_ll - calculate_joint_ll(logits, data.y)
+      return true_ll - metrics.calculate_joint_ll(logits, data.y)
 
     kl_keys = jax.random.split(kl_key, self.num_test_seeds)
 
@@ -201,7 +108,8 @@ class ClassificationSampleAccEce:
   ) -> Dict[str, float]:
     """Evaluates accuracy and expected calibration error (ece)."""
     data_key, enn_key = jax.random.split(self.key)
-    calculate_ece = CalibrationErrorCalculator(self.num_bins)
+    calculate_accuracy = metrics.make_accuracy_calculator()
+    calculate_ece = metrics.SingleBatchECE(self.num_bins)
 
     def get_logits(x: chex.Array) -> chex.Array:
       """Returns logits for input x."""

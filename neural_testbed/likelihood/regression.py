@@ -16,8 +16,10 @@
 
 """Utility functions for calculating likelihood."""
 
-import chex
 import dataclasses
+
+import chex
+from enn.metrics import base as metrics_base
 import jax
 import jax.numpy as jnp
 from neural_testbed import base as testbed_base
@@ -71,7 +73,7 @@ class GaussianSampleKL(likelihood_base.SampleBasedKL):
       chex.assert_shape(sampled_ll, [self.num_enn_samples, 1])
 
       # TODO(author2): Make sure of our KL computation.()
-      ave_ll = likelihood_base.average_sampled_log_likelihood(sampled_ll)
+      ave_ll = metrics_base.average_sampled_log_likelihood(sampled_ll)
       return true_ll - ave_ll
 
     batched_kl = jax.jit(jax.vmap(kl_estimate))

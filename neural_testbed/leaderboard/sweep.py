@@ -17,8 +17,9 @@
 """Defines the leaderboard sweep for GP testbed."""
 
 import dataclasses
-from typing import Callable, Dict, List, Sequence
+from typing import Callable, Dict, List, Optional, Sequence
 
+import chex
 from neural_testbed import base
 from neural_testbed import generative
 
@@ -32,6 +33,9 @@ DATAFRAME = 'neural_testbed_5'
 # Maps input dimension to XGenerator for testing data (WIP).
 _TestDistCtor = Callable[[int], generative.XGenerator]
 
+# Logit constructor maps key to logit_fn
+LogitCtor = Callable[[chex.PRNGKey], generative.LogitFn]
+
 
 @dataclasses.dataclass(frozen=True)
 class ProblemConfig:
@@ -40,7 +44,8 @@ class ProblemConfig:
   prior_knowledge: base.PriorKnowledge
   # Random seed controlling all the randomness in the problem.
   seed: int
-  # Test sampling distribution, used only for classification
+  # Test sampling distribution and logit_ctor, used only for classification
+  logit_ctor: Optional[LogitCtor] = None  # If None --> 2 layer MLP
   test_distribution: _TestDistCtor = generative.make_gaussian_sampler
   # Number of inputs (X's) used for evaluation.
   num_test_seeds: int = 1000
@@ -143,7 +148,9 @@ def classification_sweep(num_seed: int = 5,
                 ProblemConfig(
                     prior_knowledge=prior_knowledge,
                     seed=seed,
-                    test_distribution=generative.make_local_sampler))
+                    test_distribution=generative.make_polyadic_sampler,
+                ),
+            )
   return {f'classification{SEPARATOR}{i}': v for i, v in enumerate(configs)}
 
 

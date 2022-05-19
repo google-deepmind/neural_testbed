@@ -30,6 +30,7 @@ from neural_testbed import agents
 from neural_testbed import base as testbed_base
 from neural_testbed import generative
 from neural_testbed.bandit import replay
+from neural_testbed.leaderboard import sweep
 import optax
 
 
@@ -41,6 +42,7 @@ class ThompsonEnnBandit:
       enn_config: agents.VanillaEnnConfig,
       input_dim: int,
       num_actions: int,
+      logit_ctor: Optional[sweep.LogitCtor] = None,
       temperature: float = 1,
       steps_per_obs: int = 1,
       logger: Optional[loggers.Logger] = None,
@@ -107,13 +109,18 @@ class ThompsonEnnBandit:
     # Generating the underlying function
     self.rng = hk.PRNGSequence(seed)
     self.actions = jax.random.normal(next(self.rng), [num_actions, input_dim])
-    logit_fn = generative.make_2layer_mlp_logit_fn(
-        input_dim=input_dim,
-        temperature=temperature,
-        hidden=50,
-        num_classes=2,
-        key=next(self.rng),
-    )
+
+    # Create the logit_fn
+    if logit_ctor is None:
+      logit_fn = generative.make_2layer_mlp_logit_fn(
+          input_dim=input_dim,
+          temperature=temperature,
+          hidden=50,
+          num_classes=2,
+          key=next(self.rng),
+      )
+    else:
+      logit_fn = logit_ctor(next(self.rng))
     logits = logit_fn(self.actions)
 
     # Vector of probabilities of rewards for each action

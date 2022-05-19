@@ -22,6 +22,7 @@ from enn import base as enn_base
 from enn import data_noise
 from enn import losses
 from enn import networks
+from enn.networks import epinet
 import jax.numpy as jnp
 from neural_testbed import agents
 from neural_testbed import base as testbed_base
@@ -54,7 +55,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
     # hidden layer and final output layer to False and for the final hidden
     # layer to True.
     expose_layers = [False,] * (len(config.hidden_sizes) - 1) + [True, False]
-    enn = networks.make_mlp_epinet(
+    enn = epinet.make_mlp_epinet(
         output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         epinet_hiddens=config.epi_hiddens,
         index_dim=config.index_dim,

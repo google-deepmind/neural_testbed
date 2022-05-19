@@ -19,11 +19,11 @@
 from typing import Tuple
 
 import chex
+from enn import metrics
 import haiku as hk
 import jax
 import jax.numpy as jnp
 from neural_tangents._src.utils import typing as nt_types
-
 from neural_testbed import base as testbed_base
 from neural_testbed import likelihood
 
@@ -146,7 +146,7 @@ class GPClassificationEnvLikelihood(likelihood.GenerativeDataSampler):
       chex.assert_shape(data.y, [self._tau, 1])
 
       # Compute the log likelihood with respect to the environment
-      log_likelihood = likelihood.categorical_log_likelihood(probs, y_test)
+      log_likelihood = metrics.categorical_log_likelihood(probs, y_test)
       return data, log_likelihood
 
     return jax.jit(sample_test_data)(key)

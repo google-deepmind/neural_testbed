@@ -43,8 +43,8 @@ def problem_from_id(problem_id: str) -> testbed_base.TestbedProblem:
 
   try:
     problem_config = sweep.SETTINGS[problem_id]
-  except KeyError:
-    raise ValueError(f'Unrecognised problem_id={problem_id}')
+  except KeyError as missing:
+    raise ValueError(f'Unrecognised problem_id={problem_id}') from missing
 
   return problem_from_config(problem_config)
 
@@ -76,13 +76,19 @@ def _load_classification(
   prior_knowledge = problem_config.prior_knowledge
   input_dim = prior_knowledge.input_dim
 
-  logit_fn = generative.make_2layer_mlp_logit_fn(
-      input_dim=input_dim,
-      temperature=prior_knowledge.temperature,
-      hidden=50,
-      num_classes=prior_knowledge.num_classes,
-      key=next(rng),
-  )
+  # Parse the logit_ctor from config
+  if problem_config.logit_ctor is None:
+    logit_fn = generative.make_2layer_mlp_logit_fn(
+        input_dim=input_dim,
+        temperature=prior_knowledge.temperature,
+        hidden=50,
+        num_classes=prior_knowledge.num_classes,
+        key=next(rng),
+    )
+  else:
+    logit_fn = problem_config.logit_ctor(next(rng))
+
+  # Parse the distribution shift
   if shift_config is None:
     override_train_data = None
   else:
@@ -94,6 +100,8 @@ def _load_classification(
         num_samples=prior_knowledge.num_train,
         key=next(rng),
     )
+
+  # Generate the sample based testbed
   data_sampler = generative.ClassificationEnvLikelihood(
       logit_fn=logit_fn,
       x_train_generator=generative.make_gaussian_sampler(input_dim),

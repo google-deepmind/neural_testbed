@@ -136,16 +136,11 @@ class MLPClassificationEnsembleTest(parameterized.TestCase):
     # Check that for at most 20% of problems, the labels are degenerate
     assert degenerate_cases / num_seeds <= 0.2
 
-  @parameterized.parameters(itertools.product(
-      [1, 10], [1, 10], [1, 2], [0.01, 0.1]))
-  def test_local_generator(self,
-                           input_dim: int,
-                           tau: int,
-                           kappa: int,
-                           sigma: float):
+  @parameterized.parameters(itertools.product([1, 10], [1, 10], [1, 2]))
+  def test_local_generator(self, input_dim: int, tau: int, kappa: int):
     """Checks that the local generator produces valid testing points."""
-    local_sampler = classification_envlikelihood.make_local_sampler(
-        input_dim, kappa, sigma)
+    local_sampler = classification_envlikelihood.make_polyadic_sampler(
+        input_dim, kappa)
 
     for seed in range(10):
       test_x = local_sampler(jax.random.PRNGKey(seed), tau)

@@ -25,11 +25,11 @@ def base_sweep() -> Sequence[bbb.BBBConfig]:
   """Basic sweep over hyperparams."""
   sweep = []
   for learning_rate in [1e-3, 3e-3]:
-    for num_batches in [500, 1000, 2000]:
+    for adaptive_scale in [True, False]:
       sweep.append(
           bbb.BBBConfig(
               learning_rate=learning_rate,
-              num_batches=num_batches))
+              adaptive_scale=adaptive_scale))
   return tuple(sweep)
 
 

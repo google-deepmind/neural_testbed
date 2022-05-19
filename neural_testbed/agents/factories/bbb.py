@@ -35,9 +35,9 @@ class BBBConfig:
   """Configuration for bbb agent."""
   hidden_sizes: Sequence[int] = (50, 50)  # Hidden sizes for the neural network
   num_batches: int = 1000  # Number of SGD steps
-  learning_rate: float = 1e-3  # Learning rate for adam optimizer
+  learning_rate: float = 3e-3  # Learning rate for adam optimizer
   seed: int = 0  # Initialization seed
-  sigma_1: float = 0.3  # Standard deviation of the first Gaussian prior
+  sigma_1: float = 1.0  # Standard deviation of the first Gaussian prior
   sigma_2: float = 0.75  # Standard deviation of the second Gaussian prior
   mixture_scale: float = 1.  # Scale for mixture of two Gauusian densities
   num_index_samples: int = 8  # Number of index samples to average over

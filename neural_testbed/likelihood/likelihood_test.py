@@ -130,43 +130,6 @@ class DummyRegressionENN(testbed_base.EpistemicSampler):
 
 class UtilTest(parameterized.TestCase):
 
-  @parameterized.parameters([1, 3, 100])
-  def test_average_sampled_log_likelihood_all_neginf(self, num_sample: int):
-    """Test that average of negative infinity log likelihood is neg infinity."""
-    log_likelihood = jnp.concatenate([jnp.array([-jnp.inf] * num_sample)])
-    avg_log_likelihood = likelihood.average_sampled_log_likelihood(
-        log_likelihood)
-    self.assertTrue(jnp.isneginf(avg_log_likelihood))
-
-  @parameterized.parameters([3, 100])
-  def test_average_sampled_log_likelihood_single_neginf(self, num_sample: int):
-    """Test that avg with one negative infinity log likelihood is correct."""
-    log_likelihood = jnp.concatenate([jnp.array([-jnp.inf]),
-                                      jnp.zeros(shape=(num_sample - 1,))])
-    avg_log_likelihood = likelihood.average_sampled_log_likelihood(
-        log_likelihood)
-    expected_log_likelihood = jnp.log((num_sample -1) / num_sample)
-    self.assertAlmostEqual(
-        avg_log_likelihood, expected_log_likelihood,
-        msg=(f'Expected log likelihood to be {expected_log_likelihood} ',
-             f'but received {avg_log_likelihood}'),
-        delta=0.1/num_sample)
-
-  @parameterized.product(
-      ll_val=[-1000, -100, 10, 0],
-      num_sample=[1, 3, 100])
-  def test_average_sampled_log_likelihood_const_values(
-      self, ll_val: float, num_sample: int):
-    """Test that average of equal log likelihood values is correct."""
-    log_likelihood = ll_val * jnp.ones(shape=(num_sample,))
-    avg_log_likelihood = likelihood.average_sampled_log_likelihood(
-        log_likelihood)
-    self.assertAlmostEqual(
-        avg_log_likelihood, ll_val,
-        msg=(f'Expected log likelihood to be {ll_val} ',
-             f'but received {avg_log_likelihood}'),
-        delta=1e-5)
-
   @parameterized.product(
       err_val=[0, 1., 1e3],
       cov_val=[1, 1e-3, 1e3])
