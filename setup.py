@@ -15,7 +15,7 @@
 # ============================================================================
 """Install script for setuptools."""
 
-import imp
+import imp  # pylint: disable=deprecated-module
 
 import setuptools
 
@@ -42,22 +42,21 @@ setuptools.setup(
     keywords='probabilistic-inference python machine-learning',
     packages=setuptools.find_packages(),
     install_requires=[
-        'dm-haiku==0.0.5',
-        'enn @ git+https://git@github.com/deepmind/enn',
         'absl-py',
+        'chex',
+        'dm-haiku',
+        'enn @ git+https://git@github.com/deepmind/enn',
+        'jax',
+        'jaxlib',
+        'ml_collections',
+        'neural-tangents',
         'numpy',
         'pandas',
-        'jaxlib',
-        'jax',
-        'ml_collections',
-        'tensorflow',
-        'tensorflow-datasets',
-        'tensorflow-probability',
-        'chex',
-        'neural-tangents',
-        'dataclasses',  # Back-port for Python 3.6.
-        'typing-extensions',
         'plotnine',
+        'tensorflow==2.8.0',
+        'tensorflow-datasets==4.5.2',
+        'tensorflow_probability==0.15.0',
+        'typing-extensions',
     ],
     extras_require={
         'testing': testing_require,
