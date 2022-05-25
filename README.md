@@ -99,11 +99,11 @@ In particular, you can run the agent on the whole sweep of tasks in the Neural T
 If you use `neural_testbed` in your work, please cite the accompanying [paper](https://arxiv.org/abs/2110.04629):
 
 ```bibtex
-@article{osband2021evaluating,
-  title={Evaluating Predictive Distributions: Does Bayesian Deep Learning Work?},
+@article{osband2022neural,
+  title={The Neural Testbed: Evaluating Joint Predictions},
   author={Osband, Ian and Wen, Zheng and Asghari, Seyed Mohammad and Dwaracherla, Vikranth and Hao, Botao and Ibrahimi, Morteza and Lawson, Dieterich and Lu, Xiuyuan and O'Donoghue, Brendan and Van Roy, Benjamin},
   journal={arXiv preprint arXiv:2110.04629},
-  year={2021}
+  year={2022}
 }
 ```
 
