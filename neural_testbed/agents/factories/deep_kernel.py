@@ -179,7 +179,8 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
         # We will also log the accuracy in classification.
         extra_losses={'acc': losses.AccuracyErrorLoss(prior.num_classes)},
     )
-    loss_fn = losses.add_l2_weight_decay(single_loss, scale=weight_decay)
+    loss_fn = losses.average_single_index_loss(single_loss,)
+    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=weight_decay)
     loss_fn = jax.jit(functools.partial(loss_fn, net))
 
     optimizer = optax.adam(config.learning_rate)

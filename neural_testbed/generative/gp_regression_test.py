@@ -27,7 +27,7 @@ from neural_testbed.generative import nt_kernels
 import numpy as np
 
 # This is necessary to prevent nans.
-# TODO(vikranthd): Look into fixing the nans and removing this.
+# TODO(author6): Look into fixing the nans and removing this.
 jax.config.update('jax_enable_x64', True)
 
 

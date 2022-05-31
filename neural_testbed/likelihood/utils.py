@@ -53,7 +53,7 @@ def log_sum_prod(nu: chex.Array, q_hat: chex.Array) -> float:
 
 def parse_kl_estimates(kl_estimates: chex.Array) -> testbed_base.ENNQuality:
   """Parse the finite elements of KL estimates."""
-  # TODO(zhengwen): This section of the code is designed to clip errant inf.
+  # TODO(author5): This section of the code is designed to clip errant inf.
   # We don't exactly know why this is happening but decide to clip infinite
   # estimate by the maximum finite KL and record the number of inf estimates.
   kl_estimates_finite = kl_estimates[jnp.isfinite(kl_estimates)]
