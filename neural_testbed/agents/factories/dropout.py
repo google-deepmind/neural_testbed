@@ -18,7 +18,7 @@
 import dataclasses
 from typing import Sequence
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import losses
 from enn import networks
 from neural_testbed import agents

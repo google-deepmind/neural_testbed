@@ -17,11 +17,11 @@
 """A minimalist wrapper around ENN experiment for testbed submission."""
 
 import dataclasses
-from typing import Dict, Optional, Union, Callable
+from typing import Callable, Dict, Optional, Union
 
 from acme.utils import loggers
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import supervised
 from enn import utils
 import jax

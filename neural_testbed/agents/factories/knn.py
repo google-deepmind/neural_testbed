@@ -17,7 +17,7 @@
 
 import dataclasses
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from neural_testbed import base as testbed_base
 import numpy as np
 from sklearn import neighbors

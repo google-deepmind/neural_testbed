@@ -19,7 +19,7 @@
 from typing import Callable, Optional
 
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
 from neural_testbed import base as testbed_base

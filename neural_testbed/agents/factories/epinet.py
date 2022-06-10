@@ -18,7 +18,7 @@
 import dataclasses
 from typing import Sequence
 
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
 from enn import networks

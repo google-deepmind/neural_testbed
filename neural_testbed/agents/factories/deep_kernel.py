@@ -33,7 +33,7 @@ import functools
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence
 
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import losses
 from enn import utils
 import haiku as hk

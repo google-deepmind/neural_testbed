@@ -19,7 +19,7 @@ import dataclasses
 
 from absl import logging
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import losses
 from enn import networks
 from enn import supervised

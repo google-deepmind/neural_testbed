@@ -20,7 +20,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 import jax
 import jax.numpy as jnp
 from neural_testbed.generative import plotting

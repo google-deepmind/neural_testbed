@@ -20,7 +20,7 @@ from typing import Dict, Optional, Tuple
 
 from acme.utils import loggers
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import losses
 from enn import utils
 import haiku as hk
@@ -200,4 +200,3 @@ def _random_argmax(vals: chex.Array,
   """Select argmax with additional random noise."""
   noise = jax.random.uniform(key, vals.shape)
   return jnp.argmax(vals + scale * noise, axis=0)
-

@@ -18,7 +18,7 @@
 from typing import Optional
 
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import supervised
 from enn import utils
 import jax

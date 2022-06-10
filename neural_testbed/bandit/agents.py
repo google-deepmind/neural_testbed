@@ -22,7 +22,7 @@ import typing
 from typing import Tuple
 
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 from enn import losses
 import haiku as hk
 import jax.numpy as jnp
@@ -97,4 +97,3 @@ def _make_bbb_bandit_loss(config: bbb.BBBConfig) -> agents.LossCtor:
 
     return losses.average_single_index_loss(elbo_loss, config.num_index_samples)
   return loss_ctor
-

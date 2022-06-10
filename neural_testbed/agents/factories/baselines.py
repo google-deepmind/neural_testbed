@@ -19,7 +19,7 @@ import dataclasses
 from typing import Sequence
 
 import chex
-from enn import base as enn_base
+from enn import base_legacy as enn_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
