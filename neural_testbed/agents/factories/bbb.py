@@ -21,6 +21,7 @@ from typing import Sequence
 from enn import base_legacy as enn_base
 from enn import losses
 from enn import networks
+from enn import utils as enn_utils
 
 import jax.numpy as jnp
 
@@ -59,6 +60,8 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
         base_output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         dummy_input=jnp.zeros(shape=(prior.input_dim,)),
         temperature=temperature)
+
+    enn = enn_utils.wrap_enn_with_state_as_enn(enn)
 
     return enn
 

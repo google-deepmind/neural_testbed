@@ -22,6 +22,7 @@ from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
 from enn import networks
+from enn import utils as enn_utils
 import jax.numpy as jnp
 from neural_testbed import base as testbed_base
 from neural_testbed.agents import enn_agent
@@ -60,7 +61,7 @@ def make_hypermodel_agent(
       prior_scale /= float(jnp.sqrt(prior.temperature))
     else:
       pass
-    return networks.MLPHypermodelPriorIndependentLayers(
+    enn = networks.MLPHypermodelPriorIndependentLayers(
         base_output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         prior_scale=prior_scale,
         dummy_input=jnp.ones([100, prior.input_dim]),
@@ -71,6 +72,7 @@ def make_hypermodel_agent(
         seed=config.seed,
         scale=config.scale,
     )
+    return enn_utils.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:

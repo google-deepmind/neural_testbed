@@ -75,11 +75,12 @@ def make_agent(config: SGMCMCConfig):
   """Factory method to create a sgmcmc agent."""
 
   def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
-    return networks.make_einsum_ensemble_mlp_enn(
+    enn = networks.make_einsum_ensemble_mlp_enn(
         output_sizes=[config.num_hidden, config.num_hidden, prior.num_classes],
         num_ensemble=1,
         nonzero_bias=False,
     )
+    return enn_utils.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge) -> enn_base.LossFn:
     single_loss = losses.combine_single_index_losses_as_metric(

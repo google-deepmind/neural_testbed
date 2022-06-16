@@ -22,6 +22,7 @@ from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
 from enn import networks
+from enn import utils as enn_utils
 from enn.networks import epinet
 import jax.numpy as jnp
 from neural_testbed import agents
@@ -62,6 +63,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
         expose_layers=expose_layers,
         prior_scale=config.prior_scale_epi,
     )
+    enn = enn_utils.wrap_enn_with_state_as_enn(enn)
 
     # Adding a linear combination of networks as prior function
     mlp_prior_fns = networks.make_mlp_ensemble_prior_fns(

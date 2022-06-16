@@ -21,6 +21,7 @@ from typing import Sequence
 from enn import base_legacy as enn_base
 from enn import losses
 from enn import networks
+from enn import utils as enn_utils
 from neural_testbed import agents
 from neural_testbed import base as testbed_base
 from neural_testbed.agents.factories import base as factories_base
@@ -48,12 +49,13 @@ def make_mc_dropout_agent(
   """Factory method to create MC dropout agent."""
 
   def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
-    return networks.MLPDropoutENN(
+    enn = networks.MLPDropoutENN(
         output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         dropout_rate=config.dropout_rate,
         dropout_input=config.dropout_input,
         seed=config.seed,
     )
+    return enn_utils.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:

@@ -22,6 +22,7 @@ from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
 from enn import networks
+from enn import utils as enn_utils
 import jax.numpy as jnp
 from neural_testbed import base as testbed_base
 from neural_testbed.agents import enn_agent
@@ -54,13 +55,14 @@ def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
       prior_scale /= float(jnp.sqrt(prior.temperature))
     else:
       pass
-    return networks.make_ensemble_mlp_with_prior_enn(
+    enn = networks.make_ensemble_mlp_with_prior_enn(
         output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         dummy_input=jnp.ones([100, prior.input_dim]),
         num_ensemble=config.num_ensemble,
         prior_scale=prior_scale,
         seed=config.seed + 999,
     )
+    return enn_utils.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
