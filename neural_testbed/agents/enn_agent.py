@@ -86,12 +86,16 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
 
     # TODO(author2): Complete prior loss refactor --> MultilossExperiment
     trainers = []
-    trainers.append(supervised.MultilossTrainer(
+    # TODO(author3): Change enn and losses to be with state and use
+    # MultilossTrainer instead of MultilossTrainerLegacy.
+    trainers.append(supervised.MultilossTrainerLegacy(
         loss_fn=self.config.loss_ctor(prior, enn),
         dataset=dataset,
     ))
     if self.config.prior_loss_ctor is not None:
-      trainers.append(supervised.MultilossTrainer(
+      # TODO(author3): Change enn and losses to be with state and use
+      # MultilossTrainer instead of MultilossTrainerLegacy.
+      trainers.append(supervised.MultilossTrainerLegacy(
           loss_fn=self.config.prior_loss_ctor(prior, enn),
           dataset=dataset,
           should_train=lambda step: step % self.config.prior_loss_freq == 0,
@@ -104,7 +108,9 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
     else:
       num_batches = self.config.num_batches(prior)
 
-    self.experiment = supervised.MultilossExperiment(
+    # TODO(author3): Change enn and losses to be with state and use
+    # MultilossExperiment instead of MultilossExperimentLegacy.
+    self.experiment = supervised.MultilossExperimentLegacy(
         enn=enn,
         trainers=trainers,
         optimizer=self.config.optimizer,

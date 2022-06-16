@@ -116,7 +116,7 @@ def make_agent(config: SGMCMCConfig):
         temperature=config.alg_temperature/prior.num_train)
 
     # Define the experiment
-    sgd_experiment = supervised.Experiment(
+    sgd_experiment = supervised.ExperimentLegacy(
         enn=make_enn(prior),
         loss_fn=make_loss(prior),
         optimizer=optimizer_sgld,
