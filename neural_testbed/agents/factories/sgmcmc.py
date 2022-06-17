@@ -23,7 +23,6 @@ from enn import base_legacy as enn_base
 from enn import losses
 from enn import networks
 from enn import supervised
-from enn import utils as enn_utils
 import jax
 import jax.numpy as jnp
 from neural_testbed import base as testbed_base
@@ -67,7 +66,7 @@ def extract_enn_sampler(enn: enn_base.EpistemicNetwork,
     param_index = jax.random.randint(key, [], 0, len(params_list))
     fns = [lambda x, w=p: enn.apply(w, x, 0) for p in params_list]
     out = jax.lax.switch(param_index, fns, x)
-    return enn_utils.parse_net_output(out)
+    return networks.parse_net_output(out)
   return jax.jit(enn_sampler)
 
 
@@ -80,7 +79,7 @@ def make_agent(config: SGMCMCConfig):
         num_ensemble=1,
         nonzero_bias=False,
     )
-    return enn_utils.wrap_enn_with_state_as_enn(enn)
+    return networks.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge) -> enn_base.LossFn:
     single_loss = losses.combine_single_index_losses_as_metric(

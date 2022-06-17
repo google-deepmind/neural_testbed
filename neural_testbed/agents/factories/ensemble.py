@@ -21,7 +21,6 @@ from typing import Sequence
 from enn import base_legacy as enn_base
 from enn import losses
 from enn import networks
-from enn import utils as enn_utils
 from neural_testbed import base as testbed_base
 from neural_testbed.agents import enn_agent
 import numpy as np
@@ -47,7 +46,7 @@ def make_agent(config: VanillaEnsembleConfig) -> enn_agent.VanillaEnnAgent:
         num_ensemble=config.num_ensemble,
         nonzero_bias=False,
     )
-    return enn_utils.wrap_enn_with_state_as_enn(enn)
+    return networks.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:

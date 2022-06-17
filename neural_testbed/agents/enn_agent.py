@@ -22,6 +22,7 @@ from typing import Callable, Dict, Optional, Union
 from acme.utils import loggers
 import chex
 from enn import base_legacy as enn_base
+from enn import networks
 from enn import supervised
 from enn import utils
 import jax
@@ -59,7 +60,7 @@ def extract_enn_sampler(
   def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
     """Generate a random sample from posterior distribution at x."""
     net_out = experiment.predict(x, key)
-    return utils.parse_net_output(net_out)
+    return networks.parse_net_output(net_out)
   return jax.jit(enn_sampler)
 
 
@@ -78,7 +79,7 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
     """Wraps an ENN as a testbed agent, using sensible loss/bootstrapping."""
     enn = self.config.enn_ctor(prior)
     if self.config.center_train_data:
-      enn = utils.make_centered_enn(enn, data.x)
+      enn = networks.make_centered_enn(enn, data.x)
 
     enn_data = enn_base.Batch(data.x, data.y)
     dataset = utils.make_batch_iterator(

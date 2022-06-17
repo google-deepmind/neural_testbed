@@ -22,7 +22,7 @@ from acme.utils import loggers
 import chex
 from enn import base_legacy as enn_base
 from enn import losses
-from enn import utils
+from enn import networks
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -146,7 +146,7 @@ class ThompsonEnnBandit:
                       key: enn_base.RngKey) -> Dict[str, enn_base.Array]:
       net_key, noise_key, selection_key = jax.random.split(key, 3)
       net_out = forward(params, self.actions, net_key)
-      logits = utils.parse_net_output(net_out)
+      logits = networks.parse_net_output(net_out)
       probs = jax.nn.softmax(logits)[:, 1]
       action = _random_argmax(probs, selection_key)
       chosen_prob = self.probs[action]

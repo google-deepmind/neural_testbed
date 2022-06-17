@@ -19,6 +19,7 @@ from typing import Optional
 
 import chex
 from enn import base_legacy as enn_base
+from enn import networks
 from enn import supervised
 from enn import utils
 import jax
@@ -30,7 +31,7 @@ def extract_enn_sampler(
   def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
     """Generate a random sample from posterior distribution at x."""
     net_out = experiment.predict(x, key)
-    return utils.parse_net_output(net_out)
+    return networks.parse_net_output(net_out)
   return jax.jit(enn_sampler)
 
 
