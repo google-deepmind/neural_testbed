@@ -122,6 +122,6 @@ def combine_loss_prior_loss(loss_fn: enn_base.LossFn,
     return loss_fn
   else:
     return losses.combine_losses([
-        losses.CombineLossConfig(loss_fn, 'loss'),
-        losses.CombineLossConfig(prior_loss_fn, 'prior', weight),
+        losses.CombineLossConfigNoState(loss_fn, 'loss'),
+        losses.CombineLossConfigNoState(prior_loss_fn, 'prior', weight),
     ])
