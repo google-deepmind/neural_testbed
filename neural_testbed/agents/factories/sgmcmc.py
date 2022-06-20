@@ -78,7 +78,7 @@ def make_agent(config: SGMCMCConfig):
         num_ensemble=1,
         nonzero_bias=False,
     )
-    return networks.wrap_enn_with_state_as_enn(enn)
+    return networks.wrap_enn_as_enn_no_state(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge) -> losses.LossFnNoState:
     single_loss = losses.combine_single_index_losses_no_state_as_metric(

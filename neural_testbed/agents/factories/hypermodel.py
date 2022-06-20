@@ -70,7 +70,7 @@ def make_hypermodel_agent(
         seed=config.seed,
         scale=config.scale,
     )
-    return networks.wrap_enn_with_state_as_enn(enn)
+    return networks.wrap_enn_as_enn_no_state(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: networks.EnnNoState) -> losses.LossFnNoState:

@@ -61,7 +61,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
         expose_layers=expose_layers,
         prior_scale=config.prior_scale_epi,
     )
-    enn = networks.wrap_enn_with_state_as_enn(enn)
+    enn = networks.wrap_enn_as_enn_no_state(enn)
 
     # Adding a linear combination of networks as prior function
     mlp_prior_fns = networks.make_mlp_ensemble_prior_fns(

@@ -79,7 +79,7 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
     """Wraps an ENN as a testbed agent, using sensible loss/bootstrapping."""
     enn = self.config.enn_ctor(prior)
     if self.config.center_train_data:
-      enn = networks.make_centered_enn(enn, data.x)
+      enn = networks.make_centered_enn_no_state(enn, data.x)
 
     enn_data = enn_base.Batch(data.x, data.y)
     dataset = utils.make_batch_iterator(

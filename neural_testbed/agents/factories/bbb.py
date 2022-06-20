@@ -59,7 +59,7 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
         dummy_input=jnp.zeros(shape=(prior.input_dim,)),
         temperature=temperature)
 
-    enn = networks.wrap_enn_with_state_as_enn(enn)
+    enn = networks.wrap_enn_as_enn_no_state(enn)
 
     return enn
 

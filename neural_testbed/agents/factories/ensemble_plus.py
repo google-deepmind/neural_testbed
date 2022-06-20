@@ -60,7 +60,7 @@ def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
         prior_scale=prior_scale,
         seed=config.seed + 999,
     )
-    return networks.wrap_enn_with_state_as_enn(enn)
+    return networks.wrap_enn_as_enn_no_state(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: networks.EnnNoState) -> losses.LossFnNoState:
