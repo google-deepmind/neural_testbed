@@ -33,7 +33,7 @@ import functools
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence
 
 import chex
-from enn import base_legacy as enn_base
+from enn import base as enn_base
 from enn import losses
 from enn import utils
 import haiku as hk
@@ -217,7 +217,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
 
     ##### Cholesky factor ready #####
 
-    def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
+    def enn_sampler(x: chex.Array, key: chex.PRNGKey) -> chex.Array:
       # phi_s [B_test, num_features] (test data)
       rng = hk.PRNGSequence(key)
       mean_s, phi_s = predict_fn_t.apply(state.params, x)

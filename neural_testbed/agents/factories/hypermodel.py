@@ -18,7 +18,6 @@
 import dataclasses
 from typing import Sequence
 
-from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
 from enn import networks
@@ -52,7 +51,7 @@ def make_hypermodel_agent(
     config: HypermodelConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create a hypermodel."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
     prior_scale = config.prior_scale
     if config.temp_scale_prior == 'lin':
       prior_scale /= prior.temperature
@@ -74,7 +73,7 @@ def make_hypermodel_agent(
     return networks.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                enn: networks.EnnNoState) -> losses.LossFnNoState:
 
     single_loss = losses.combine_single_index_losses_as_metric(
         # This is the loss you are training on.

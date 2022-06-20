@@ -19,7 +19,6 @@ import dataclasses
 
 from absl import logging
 import chex
-from enn import base_legacy as enn_base
 from enn import losses
 from enn import networks
 from enn import supervised
@@ -57,10 +56,10 @@ def get_preconditioner(config: SGMCMCConfig):
 
 
 # ENN sampler for MCMC
-def extract_enn_sampler(enn: enn_base.EpistemicNetwork,
+def extract_enn_sampler(enn: networks.EnnNoState,
                         params_list) -> testbed_base.EpistemicSampler:
   """ENN sampler for MCMC."""
-  def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
+  def enn_sampler(x: chex.Array, key: chex.PRNGKey) -> chex.Array:
     """Generate a random sample from posterior distribution at x."""
     # pylint: disable=cell-var-from-loop
     param_index = jax.random.randint(key, [], 0, len(params_list))
@@ -73,7 +72,7 @@ def extract_enn_sampler(enn: enn_base.EpistemicNetwork,
 def make_agent(config: SGMCMCConfig):
   """Factory method to create a sgmcmc agent."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
     enn = networks.make_einsum_ensemble_mlp_enn(
         output_sizes=[config.num_hidden, config.num_hidden, prior.num_classes],
         num_ensemble=1,
@@ -81,7 +80,7 @@ def make_agent(config: SGMCMCConfig):
     )
     return networks.wrap_enn_with_state_as_enn(enn)
 
-  def make_loss(prior: testbed_base.PriorKnowledge) -> enn_base.LossFn:
+  def make_loss(prior: testbed_base.PriorKnowledge) -> losses.LossFnNoState:
     single_loss = losses.combine_single_index_losses_as_metric(
         # This is the loss you are training on.
         train_loss=losses.XentLoss(prior.num_classes),

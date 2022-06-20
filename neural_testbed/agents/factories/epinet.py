@@ -18,7 +18,6 @@
 import dataclasses
 from typing import Sequence
 
-from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
 from enn import networks
@@ -48,7 +47,7 @@ class EpinetConfig:
 def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create an epinet agent with ensemble prior."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
     prior_scale = config.prior_scale / prior.temperature
 
     # We only want to expose final hidden layer, so we set the flag for previous
@@ -75,7 +74,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
     return networks.EnnWithAdditivePrior(enn, mlp_prior_fn, prior_scale)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                enn: networks.EnnNoState) -> losses.LossFnNoState:
     """You can override this function to try different loss functions."""
     single_loss = losses.combine_single_index_losses_as_metric(
         # This is the loss you are training on.

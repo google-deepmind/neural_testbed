@@ -18,21 +18,20 @@
 
 from typing import Callable, Optional
 
-
-from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
+from enn import networks
 from neural_testbed import base as testbed_base
 
 
-EnnCtor = Callable[[testbed_base.PriorKnowledge], enn_base.EpistemicNetwork]
+EnnCtor = Callable[[testbed_base.PriorKnowledge], networks.EnnNoState]
 LossCtor = Callable[
-    [testbed_base.PriorKnowledge, enn_base.EpistemicNetwork], enn_base.LossFn]
+    [testbed_base.PriorKnowledge, networks.EnnNoState], losses.LossFnNoState]
 
 
 def default_enn_prior_loss(num_index_samples: int = 10) -> LossCtor:
   def prior_loss_ctor(prior: testbed_base.PriorKnowledge,
-                      enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                      enn: networks.EnnNoState) -> losses.LossFnNoState:
     del enn
     if prior.num_classes > 1:
       return losses.ClassificationPriorLoss(num_index_samples)
@@ -47,7 +46,7 @@ def default_enn_loss(num_index_samples: int = 10,
                      weight_reg_scale: Optional[float] = None) -> LossCtor:
   """Constructs a default loss suitable for classification or regression."""
   def loss_ctor(prior: testbed_base.PriorKnowledge,
-                enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                enn: networks.EnnNoState) -> losses.LossFnNoState:
     # Construct L2 or Xent loss based on regression/classification.
     if prior.num_classes > 1:
       single_loss = losses.combine_single_index_losses_as_metric(
@@ -77,7 +76,7 @@ def gaussian_regression_loss(num_index_samples: int,
                              exclude_bias_l2: bool = True) -> LossCtor:
   """Add a matching Gaussian noise to the target y."""
   def loss_ctor(prior: testbed_base.PriorKnowledge,
-                enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                enn: networks.EnnNoState) -> losses.LossFnNoState:
     """Add a matching Gaussian noise to the target y."""
     noise_std = noise_scale * prior.noise_std
     noise_fn = data_noise.GaussianTargetNoise(enn, noise_std)
@@ -99,7 +98,7 @@ def regularized_dropout_loss(num_index_samples: int = 10,
                              tau: float = 1.0) -> LossCtor:
   """Constructs the special regularized loss of the paper "Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning" (2015)."""
   def loss_ctor(prior: testbed_base.PriorKnowledge,
-                enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                enn: networks.EnnNoState) -> losses.LossFnNoState:
     del enn  # Unused
     if prior.num_classes > 1:
       single_loss = losses.combine_single_index_losses_as_metric(
@@ -114,9 +113,10 @@ def regularized_dropout_loss(num_index_samples: int = 10,
   return loss_ctor
 
 
-def combine_loss_prior_loss(loss_fn: enn_base.LossFn,
-                            prior_loss_fn: Optional[enn_base.LossFn] = None,
-                            weight: float = 1.) -> enn_base.LossFn:
+def combine_loss_prior_loss(loss_fn: losses.LossFnNoState,
+                            prior_loss_fn: Optional[
+                                losses.LossFnNoState] = None,
+                            weight: float = 1.) -> losses.LossFnNoState:
   """Compatibility wrapper for deprecated prior_loss_fn interface."""
   if prior_loss_fn is None:
     return loss_fn

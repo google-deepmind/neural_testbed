@@ -22,8 +22,9 @@ import typing
 from typing import Tuple
 
 import chex
-from enn import base_legacy as enn_base
+from enn import base as enn_base
 from enn import losses
+from enn import networks
 import haiku as hk
 import jax.numpy as jnp
 from neural_testbed import agents
@@ -74,18 +75,18 @@ def _make_bbb_bandit_loss(config: bbb.BBBConfig) -> agents.LossCtor:
   """BBB loss with decaying prior through time for sequential decisions."""
 
   def loss_ctor(prior: testbed_base.PriorKnowledge,
-                enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                enn: networks.EnnNoState) -> losses.LossFnNoState:
     del enn
     log_likelihood_fn = losses.get_categorical_loglike_fn(prior.num_classes)
     prior_kl_fn = losses.get_analytical_diagonal_linear_model_prior_kl_fn(
         1, config.sigma_1)
 
     def elbo_loss(
-        apply: enn_base.ApplyFn,
+        apply: networks.ApplyNoState,
         params: hk.Params,
         batch: enn_base.Batch,
         index: enn_base.Index,
-    ) -> Tuple[enn_base.Array, enn_base.LossMetrics]:
+    ) -> Tuple[chex.Array, enn_base.LossMetrics]:
       """Elbo loss with decay per num_steps stored in the batch."""
       out = apply(params, batch.x, index)
       log_likelihood = log_likelihood_fn(out, batch)

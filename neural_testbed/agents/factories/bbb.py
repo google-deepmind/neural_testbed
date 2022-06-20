@@ -18,7 +18,6 @@
 import dataclasses
 from typing import Sequence
 
-from enn import base_legacy as enn_base
 from enn import losses
 from enn import networks
 
@@ -50,7 +49,7 @@ class BBBConfig:
 def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create a BBB agent."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
     """Makes ENN."""
     temperature = 1.
     if config.output_scale:
@@ -65,7 +64,7 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
     return enn
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                enn: networks.EnnNoState) -> losses.LossFnNoState:
     """Define the ENN architecture from the prior."""
     del enn
     # Loss assuming a classification task.

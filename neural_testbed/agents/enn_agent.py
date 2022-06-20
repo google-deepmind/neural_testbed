@@ -21,7 +21,7 @@ from typing import Callable, Dict, Optional, Union
 
 from acme.utils import loggers
 import chex
-from enn import base_legacy as enn_base
+from enn import base as enn_base
 from enn import networks
 from enn import supervised
 from enn import utils
@@ -57,7 +57,7 @@ class VanillaEnnConfig:
 
 def extract_enn_sampler(
     experiment: supervised.BaseExperiment) -> testbed_base.EpistemicSampler:
-  def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
+  def enn_sampler(x: chex.Array, key: chex.PRNGKey) -> chex.Array:
     """Generate a random sample from posterior distribution at x."""
     net_out = experiment.predict(x, key)
     return networks.parse_net_output(net_out)

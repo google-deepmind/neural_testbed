@@ -17,7 +17,7 @@
 
 import dataclasses
 
-from enn import base_legacy as enn_base
+import chex
 from neural_testbed import base as testbed_base
 import numpy as np
 from sklearn import ensemble
@@ -52,7 +52,7 @@ def make_agent(config: RandomForestConfig) -> testbed_base.TestbedAgent:
     # (this will fail if the fake data isn't added above)
     assert len(random_forest.classes_) == prior.num_classes
 
-    def enn_sampler(x: enn_base.Array, seed: int = 0) -> enn_base.Array:
+    def enn_sampler(x: chex.Array, seed: int = 0) -> chex.Array:
       del seed  # seed does not affect the random_forest agent.
       probs = random_forest.predict_proba(x)
       # threshold the probabilities, otherwise get nans in the KL calculation

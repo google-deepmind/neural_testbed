@@ -18,7 +18,6 @@
 import dataclasses
 from typing import Sequence
 
-from enn import base_legacy as enn_base
 from enn import data_noise
 from enn import losses
 from enn import networks
@@ -46,7 +45,7 @@ class EnsembleConfig:
 def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
   """Factory method to create a ensemble with prior."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
     prior_scale = config.prior_scale
     if config.temp_scale_prior == 'linear':
       prior_scale /= prior.temperature
@@ -64,7 +63,7 @@ def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
     return networks.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                enn: networks.EnnNoState) -> losses.LossFnNoState:
     """You can override this function to try different loss functions."""
     single_loss = losses.combine_single_index_losses_as_metric(
         # This is the loss you are training on.

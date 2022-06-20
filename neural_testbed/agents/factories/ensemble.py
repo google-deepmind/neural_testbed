@@ -18,7 +18,6 @@
 import dataclasses
 from typing import Sequence
 
-from enn import base_legacy as enn_base
 from enn import losses
 from enn import networks
 from neural_testbed import base as testbed_base
@@ -40,7 +39,7 @@ class VanillaEnsembleConfig:
 def make_agent(config: VanillaEnsembleConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create a vanilla ensemble."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> enn_base.EpistemicNetwork:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
     enn = networks.make_einsum_ensemble_mlp_enn(
         output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         num_ensemble=config.num_ensemble,
@@ -49,7 +48,7 @@ def make_agent(config: VanillaEnsembleConfig) -> enn_agent.VanillaEnnAgent:
     return networks.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: enn_base.EpistemicNetwork) -> enn_base.LossFn:
+                enn: networks.EnnNoState) -> losses.LossFnNoState:
     del enn
     single_loss = losses.combine_single_index_losses_as_metric(
         # This is the loss you are training on.

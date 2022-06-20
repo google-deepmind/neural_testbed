@@ -19,7 +19,6 @@ import dataclasses
 from typing import Sequence
 
 import chex
-from enn import base_legacy as enn_base
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -109,7 +108,7 @@ def make_uniform_class_probs_agent(
   ) -> testbed_base.EpistemicSampler:
     """Ignores the input and always outputs equal logits for all classes."""
     del data  # data does not affect the baseline agent.
-    def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
+    def enn_sampler(x: chex.Array, key: chex.PRNGKey) -> chex.Array:
       del key  # key does not affect the baseline agent.
       return jnp.ones([x.shape[0], prior.num_classes]) / prior.num_classes
     return enn_sampler
@@ -135,7 +134,7 @@ def make_average_class_probs_agent(
         jnp.count_nonzero(data.y == label) for label in range(prior.num_classes)
     ])
     average_probs = counts / prior.num_train
-    def enn_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
+    def enn_sampler(x: chex.Array, key: chex.PRNGKey) -> chex.Array:
       del key  # key does not affect the baseline agent.
       return jnp.repeat(average_probs[None, :], x.shape[0], axis=0)
     return enn_sampler

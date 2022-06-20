@@ -20,7 +20,6 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 import chex
-from enn import base_legacy as enn_base
 import jax
 import jax.numpy as jnp
 from neural_testbed.generative import plotting
@@ -28,13 +27,13 @@ from neural_testbed.leaderboard import load
 from neural_testbed.leaderboard import sweep
 
 
-def regression_sampler(x: enn_base.Array, key: chex.PRNGKey) -> enn_base.Array:
+def regression_sampler(x: chex.Array, key: chex.PRNGKey) -> chex.Array:
   mean = jax.random.normal(key)
   return jnp.ones([x.shape[0], 1]) * mean
 
 
-def classification_sampler(x: enn_base.Array,
-                           key: chex.PRNGKey) -> enn_base.Array:
+def classification_sampler(x: chex.Array,
+                           key: chex.PRNGKey) -> chex.Array:
   del key
   return jnp.zeros([x.shape[0], 2])
 

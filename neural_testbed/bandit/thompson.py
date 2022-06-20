@@ -20,7 +20,7 @@ from typing import Dict, Optional, Tuple
 
 from acme.utils import loggers
 import chex
-from enn import base_legacy as enn_base
+from enn import base as enn_base
 from enn import losses
 from enn import networks
 import haiku as hk
@@ -74,7 +74,7 @@ class ThompsonEnnBandit:
     def loss_with_decay(
         params: hk.Params,
         batch: enn_base.Batch,
-        key: enn_base.RngKey) -> Tuple[enn_base.Array, enn_base.LossMetrics]:
+        key: chex.PRNGKey) -> Tuple[chex.Array, enn_base.LossMetrics]:
       # Adding annealing l2 weight decay manually
       data_loss, metrics = loss_fn(params, batch, key)
       l2_weight = losses.l2_weights_with_predicate(params, predicate)
@@ -87,8 +87,8 @@ class ThompsonEnnBandit:
 
     # Forward network at random index
     def forward(params: hk.Params,
-                inputs: enn_base.Array,
-                key: enn_base.RngKey) -> enn_base.Array:
+                inputs: chex.Array,
+                key: chex.PRNGKey) -> chex.Array:
       index = self.enn.indexer(key)
       return self.enn.apply(params, inputs, index)
     self._forward = jax.jit(forward)
@@ -98,7 +98,7 @@ class ThompsonEnnBandit:
         params: hk.Params,
         opt_state: optax.OptState,
         batch: enn_base.Batch,
-        key: enn_base.RngKey,
+        key: chex.PRNGKey,
     ) -> Tuple[hk.Params, optax.OptState]:
       grads, _ = jax.grad(loss_with_decay, has_aux=True)(params, batch, key)
       updates, new_opt_state = optimizer.update(grads, opt_state)
@@ -143,7 +143,7 @@ class ThompsonEnnBandit:
     self.total_regret = 0
 
     def select_action(params: hk.Params,
-                      key: enn_base.RngKey) -> Dict[str, enn_base.Array]:
+                      key: chex.PRNGKey) -> Dict[str, chex.Array]:
       net_key, noise_key, selection_key = jax.random.split(key, 3)
       net_out = forward(params, self.actions, net_key)
       logits = networks.parse_net_output(net_out)
