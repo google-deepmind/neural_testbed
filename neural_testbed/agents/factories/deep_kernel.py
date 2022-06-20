@@ -173,14 +173,14 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
         config.weight_decay * jnp.sqrt(prior.temperature) * prior.input_dim /
         prior.num_train)
 
-    single_loss = losses.combine_single_index_losses_as_metric(
+    single_loss = losses.combine_single_index_losses_no_state_as_metric(
         # This is the loss you are training on.
         train_loss=losses.XentLoss(prior.num_classes),
         # We will also log the accuracy in classification.
         extra_losses={'acc': losses.AccuracyErrorLoss(prior.num_classes)},
     )
-    loss_fn = losses.average_single_index_loss(single_loss,)
-    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=weight_decay)
+    loss_fn = losses.average_single_index_loss_no_state(single_loss,)
+    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=weight_decay)
     loss_fn = jax.jit(functools.partial(loss_fn, net))
 
     optimizer = optax.adam(config.learning_rate)

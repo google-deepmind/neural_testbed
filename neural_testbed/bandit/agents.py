@@ -96,5 +96,7 @@ def _make_bbb_bandit_loss(config: bbb.BBBConfig) -> agents.LossCtor:
       prior_kl *= 2 * jnp.sqrt(prior.temperature) / batch.extra['num_steps']
       return prior_kl - log_likelihood, {}
 
-    return losses.average_single_index_loss(elbo_loss, config.num_index_samples)
+    return losses.average_single_index_loss_no_state(elbo_loss,
+                                                     config.num_index_samples)
+
   return loss_ctor

@@ -76,7 +76,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: networks.EnnNoState) -> losses.LossFnNoState:
     """You can override this function to try different loss functions."""
-    single_loss = losses.combine_single_index_losses_as_metric(
+    single_loss = losses.combine_single_index_losses_no_state_as_metric(
         # This is the loss you are training on.
         train_loss=losses.XentLoss(prior.num_classes),
         # We will also log the accuracy in classification.
@@ -85,10 +85,11 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
 
     # Adding bootstrapping
     boot_fn = data_noise.BootstrapNoise(enn, config.distribution, config.seed)
-    single_loss = losses.add_data_noise(single_loss, boot_fn)
+    single_loss = losses.add_data_noise_no_state(single_loss, boot_fn)
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss(single_loss, config.index_dim)
+    loss_fn = losses.average_single_index_loss_no_state(single_loss,
+                                                        config.index_dim)
 
     # Adding weight decay
     scale = config.l2_weight_decay
@@ -97,7 +98,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
     def predicate(module_name: str, name: str, value) -> bool:
       del name, value
       return 'prior' not in module_name
-    loss_fn = losses.add_l2_weight_decay(loss_fn, scale, predicate)
+    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale, predicate)
     return loss_fn
 
   def num_batches(prior: testbed_base.PriorKnowledge) -> int:

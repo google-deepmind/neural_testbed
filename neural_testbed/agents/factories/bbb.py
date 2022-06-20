@@ -87,7 +87,7 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
     else:
       single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn)
 
-    loss_fn = losses.average_single_index_loss(
+    loss_fn = losses.average_single_index_loss_no_state(
         single_loss, num_index_samples=config.num_index_samples)
     return loss_fn
 

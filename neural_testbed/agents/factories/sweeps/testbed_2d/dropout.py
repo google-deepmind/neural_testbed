@@ -58,7 +58,7 @@ def make_mc_dropout_agent(
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: networks.EnnNoState) -> losses.LossFnNoState:
     del enn
-    single_loss = losses.combine_single_index_losses_as_metric(
+    single_loss = losses.combine_single_index_losses_no_state_as_metric(
         # This is the loss you are training on.
         train_loss=losses.XentLoss(prior.num_classes),
         # We will also log the accuracy in classification.
@@ -66,7 +66,8 @@ def make_mc_dropout_agent(
     )
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
+    loss_fn = losses.average_single_index_loss_no_state(
+        single_loss, num_index_samples=1)
 
     # Adding a special weight regularization based on paper "Dropout as a
     # Bayesian Approximation: Representing Model Uncertainty in Deep Learning",
@@ -80,7 +81,7 @@ def make_mc_dropout_agent(
       predicate = lambda module, name, value: name != 'b'
     else:
       predicate = lambda module, name, value: True
-    loss_fn = losses.add_l2_weight_decay(loss_fn, scale, predicate)
+    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale, predicate)
     return loss_fn
 
   agent_config = agents.VanillaEnnConfig(

@@ -81,13 +81,13 @@ def make_agent(config: SGMCMCConfig):
     return networks.wrap_enn_with_state_as_enn(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge) -> losses.LossFnNoState:
-    single_loss = losses.combine_single_index_losses_as_metric(
+    single_loss = losses.combine_single_index_losses_no_state_as_metric(
         # This is the loss you are training on.
         train_loss=losses.XentLoss(prior.num_classes),
         # We will also log the accuracy in classification.
         extra_losses={'acc': losses.AccuracyErrorLoss(prior.num_classes)},
     )
-    loss_fn = losses.average_single_index_loss(single_loss, 1)
+    loss_fn = losses.average_single_index_loss_no_state(single_loss, 1)
     # Gaussian prior can be interpreted as a L2-weight decay.
     prior_variance = config.prior_variance
     # Scale prior_variance for large input_dim
@@ -95,7 +95,7 @@ def make_agent(config: SGMCMCConfig):
       prior_variance *= 2
     scale = (1 / prior_variance) * jnp.sqrt(
         prior.temperature) * prior.input_dim / prior.num_train
-    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
+    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=scale)
     return loss_fn
 
   log_freq = int(config.num_batches / 50) or 1

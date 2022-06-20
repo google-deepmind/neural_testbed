@@ -65,7 +65,7 @@ def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: networks.EnnNoState) -> losses.LossFnNoState:
     """You can override this function to try different loss functions."""
-    single_loss = losses.combine_single_index_losses_as_metric(
+    single_loss = losses.combine_single_index_losses_no_state_as_metric(
         # This is the loss you are training on.
         train_loss=losses.XentLoss(prior.num_classes),
         # We will also log the accuracy in classification.
@@ -74,17 +74,18 @@ def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
 
     # Adding bootstrapping
     boot_fn = data_noise.BootstrapNoise(enn, config.distribution, config.seed)
-    single_loss = losses.add_data_noise(single_loss, boot_fn)
+    single_loss = losses.add_data_noise_no_state(single_loss, boot_fn)
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss(single_loss, config.num_ensemble)
+    loss_fn = losses.average_single_index_loss_no_state(single_loss,
+                                                        config.num_ensemble)
 
     # Adding weight decay
     scale = config.l2_weight_decay / config.num_ensemble
     scale /= prior.num_train
     if config.adaptive_weight_scale:
       scale *= np.sqrt(prior.temperature) * prior.input_dim
-    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
+    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=scale)
     return loss_fn
 
   def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:
