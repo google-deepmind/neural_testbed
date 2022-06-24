@@ -35,9 +35,9 @@ def default_enn_prior_loss(num_index_samples: int = 10) -> LossCtor:
                       enn: networks.EnnArray) -> losses.LossFnArray:
     del enn
     if prior.num_classes > 1:
-      return losses.ClassificationPriorLossWithState(num_index_samples)
+      return losses.ClassificationPriorLoss(num_index_samples)
     else:
-      return losses.RegressionPriorLossWithState(num_index_samples)
+      return losses.RegressionPriorLoss(num_index_samples)
   return prior_loss_ctor
 
 
@@ -51,13 +51,13 @@ def default_enn_loss(num_index_samples: int = 10,
     # Construct L2 or Xent loss based on regression/classification.
     if prior.num_classes > 1:
       single_loss = losses.combine_single_index_losses_as_metric(
-          train_loss=losses.XentLossWithState(prior.num_classes),
+          train_loss=losses.XentLoss(prior.num_classes),
           extra_losses={
-              'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+              'acc': losses.AccuracyErrorLoss(prior.num_classes)
           },
       )
     else:
-      single_loss = losses.L2LossWithState()
+      single_loss = losses.L2Loss()
 
     # Add bootstrapping
     boot_fn = data_noise.BootstrapNoise(enn, distribution, seed)
@@ -83,7 +83,7 @@ def gaussian_regression_loss(num_index_samples: int,
     """Add a matching Gaussian noise to the target y."""
     noise_std = noise_scale * prior.noise_std
     noise_fn = data_noise.GaussianTargetNoise(enn, noise_std)
-    single_loss = losses.add_data_noise(losses.L2LossWithState(), noise_fn)
+    single_loss = losses.add_data_noise(losses.L2Loss(), noise_fn)
     loss_fn = losses.average_single_index_loss(single_loss, num_index_samples)
     if l2_weight_decay != 0:
       if exclude_bias_l2:
@@ -106,13 +106,13 @@ def regularized_dropout_loss(num_index_samples: int = 10,
     # Construct L2 or Xent loss based on regression/classification.
     if prior.num_classes > 1:
       single_loss = losses.combine_single_index_losses_as_metric(
-          train_loss=losses.XentLossWithState(prior.num_classes),
+          train_loss=losses.XentLoss(prior.num_classes),
           extra_losses={
-              'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+              'acc': losses.AccuracyErrorLoss(prior.num_classes)
           },
       )
     else:
-      single_loss = losses.L2LossWithState()
+      single_loss = losses.L2Loss()
     reg = (scale**2) * (1 - dropout_rate) / (2. * prior.num_train * tau)
     loss_fn = losses.average_single_index_loss(single_loss, num_index_samples)
     return losses.add_l2_weight_decay(loss_fn, scale=reg)

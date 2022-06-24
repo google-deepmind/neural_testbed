@@ -58,9 +58,9 @@ def make_mc_dropout_agent(
                 enn: networks.EnnArray) -> losses.LossFnArray:
     del enn
     single_loss = losses.combine_single_index_losses_as_metric(
-        train_loss=losses.XentLossWithState(prior.num_classes),
+        train_loss=losses.XentLoss(prior.num_classes),
         extra_losses={
-            'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+            'acc': losses.AccuracyErrorLoss(prior.num_classes)
         },
     )
 

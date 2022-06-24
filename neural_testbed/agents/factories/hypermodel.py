@@ -77,10 +77,10 @@ def make_hypermodel_agent(
 
     single_loss = losses.combine_single_index_losses_as_metric(
         # This is the loss you are training on.
-        train_loss=losses.XentLossWithState(prior.num_classes),
+        train_loss=losses.XentLoss(prior.num_classes),
         # We will also log the accuracy in classification.
         extra_losses={
-            'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+            'acc': losses.AccuracyErrorLoss(prior.num_classes)
         },
     )
 

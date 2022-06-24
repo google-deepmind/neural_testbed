@@ -82,9 +82,9 @@ def make_agent(config: SGMCMCConfig):
 
   def make_loss(prior: testbed_base.PriorKnowledge) -> losses.LossFnArray:
     single_loss = losses.combine_single_index_losses_as_metric(
-        train_loss=losses.XentLossWithState(prior.num_classes),
+        train_loss=losses.XentLoss(prior.num_classes),
         extra_losses={
-            'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+            'acc': losses.AccuracyErrorLoss(prior.num_classes)
         },
     )
     loss_fn = losses.average_single_index_loss(single_loss, 1)

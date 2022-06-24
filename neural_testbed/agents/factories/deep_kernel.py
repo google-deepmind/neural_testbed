@@ -175,10 +175,10 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
 
     single_loss = losses.combine_single_index_losses_as_metric(
         # This is the loss you are training on.
-        train_loss=losses.XentLossWithState(prior.num_classes),
+        train_loss=losses.XentLoss(prior.num_classes),
         # We will also log the accuracy in classification.
         extra_losses={
-            'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+            'acc': losses.AccuracyErrorLoss(prior.num_classes)
         },
     )
     single_loss = losses.wrap_single_loss_as_single_loss_no_state(single_loss)

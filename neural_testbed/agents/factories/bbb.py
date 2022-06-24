@@ -80,12 +80,10 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
       ValueError(f'Invalid kl_method={config.kl_method}')
 
     if config.adaptive_scale:
-      single_loss = losses.ElboLossWithState(log_likelihood_fn,
-                                             model_prior_kl_fn,
-                                             prior.temperature, prior.input_dim)
+      single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn,
+                                    prior.temperature, prior.input_dim)
     else:
-      single_loss = losses.ElboLossWithState(log_likelihood_fn,
-                                             model_prior_kl_fn)
+      single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn)
 
     loss_fn = losses.average_single_index_loss(
         single_loss, num_index_samples=config.num_index_samples)
