@@ -70,7 +70,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
         seed=config.seed,
     )
     mlp_prior_fn = networks.combine_functions_linear_in_index(mlp_prior_fns)
-    return networks.EnnStateWithAdditivePrior(enn, mlp_prior_fn, prior_scale)
+    return networks.EnnWithAdditivePrior(enn, mlp_prior_fn, prior_scale)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
                 enn: networks.EnnArray) -> losses.LossFnArray:
