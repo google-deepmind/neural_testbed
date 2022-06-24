@@ -73,14 +73,15 @@ class ThompsonEnnBandit:
 
     def loss_with_decay(
         params: hk.Params,
+        state: hk.State,
         batch: enn_base.Batch,
-        key: chex.PRNGKey) -> Tuple[chex.Array, enn_base.LossMetrics]:
+        key: chex.PRNGKey) -> enn_base.LossOutput:
       # Adding annealing l2 weight decay manually
-      data_loss, metrics = loss_fn(params, batch, key)
+      data_loss, (state, metrics) = loss_fn(params, state, batch, key)
       l2_weight = losses.l2_weights_with_predicate(params, predicate)
       metrics['l2_weight'] = l2_weight
       decay_loss = l2_weight_decay * l2_weight / batch.extra['num_steps']
-      return data_loss + decay_loss, metrics
+      return data_loss + decay_loss, (state, metrics)
     self._loss_with_decay = jax.jit(loss_with_decay)
 
     optimizer = optax.adam(learning_rate)
@@ -90,7 +91,9 @@ class ThompsonEnnBandit:
                 inputs: chex.Array,
                 key: chex.PRNGKey) -> chex.Array:
       index = self.enn.indexer(key)
-      return self.enn.apply(params, inputs, index)
+      unused_state = {}
+      out, unused_state = self.enn.apply(params, unused_state, inputs, index)
+      return out
     self._forward = jax.jit(forward)
 
     # Perform an SGD step on a batch of data
@@ -100,7 +103,9 @@ class ThompsonEnnBandit:
         batch: enn_base.Batch,
         key: chex.PRNGKey,
     ) -> Tuple[hk.Params, optax.OptState]:
-      grads, _ = jax.grad(loss_with_decay, has_aux=True)(params, batch, key)
+      unused_state = {}
+      grads, _ = jax.grad(
+          loss_with_decay, has_aux=True)(params, unused_state, batch, key)
       updates, new_opt_state = optimizer.update(grads, opt_state)
       new_params = optax.apply_updates(params, updates)
       return new_params, new_opt_state
@@ -130,7 +135,8 @@ class ThompsonEnnBandit:
 
     # Initializing the network
     index = self.enn.indexer(next(self.rng))
-    self.params = self.enn.init(next(self.rng), self.actions, index)
+    self.params, self.network_state = self.enn.init(
+        next(self.rng), self.actions, index)
     self.opt_state = optimizer.init(self.params)
     self._steps_per_obs = steps_per_obs
     self._temperature = temperature

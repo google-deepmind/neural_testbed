@@ -39,34 +39,32 @@ class VanillaEnsembleConfig:
 def make_agent(config: VanillaEnsembleConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create a vanilla ensemble."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
-    enn = networks.make_einsum_ensemble_mlp_enn(
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
+    return networks.make_einsum_ensemble_mlp_enn(
         output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         num_ensemble=config.num_ensemble,
         nonzero_bias=False,
     )
-    return networks.wrap_enn_as_enn_no_state(enn)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: networks.EnnNoState) -> losses.LossFnNoState:
+                enn: networks.EnnArray) -> losses.LossFnArray:
     del enn
-    single_loss = losses.combine_single_index_losses_no_state_as_metric(
-        # This is the loss you are training on.
-        train_loss=losses.XentLoss(prior.num_classes),
-        # We will also log the accuracy in classification.
-        extra_losses={'acc': losses.AccuracyErrorLoss(prior.num_classes)},
+    single_loss = losses.combine_single_index_losses_as_metric(
+        train_loss=losses.XentLossWithState(prior.num_classes),
+        extra_losses={
+            'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+        },
     )
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss_no_state(single_loss,
-                                                        config.num_ensemble)
+    loss_fn = losses.average_single_index_loss(single_loss, config.num_ensemble)
 
     # Adding weight decay
     scale = config.l2_weight_decay / config.num_ensemble
     scale /= prior.num_train
     if config.adaptive_weight_scale:
       scale *= np.sqrt(prior.temperature) * prior.input_dim
-    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=scale)
+    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 
   def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:

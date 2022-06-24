@@ -47,7 +47,7 @@ class EpinetConfig:
 def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create an epinet agent with ensemble prior."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
     prior_scale = config.prior_scale / prior.temperature
 
     # We only want to expose final hidden layer, so we set the flag for previous
@@ -61,7 +61,6 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
         expose_layers=expose_layers,
         prior_scale=config.prior_scale_epi,
     )
-    enn = networks.wrap_enn_as_enn_no_state(enn)
 
     # Adding a linear combination of networks as prior function
     mlp_prior_fns = networks.make_mlp_ensemble_prior_fns(
@@ -71,25 +70,24 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
         seed=config.seed,
     )
     mlp_prior_fn = networks.combine_functions_linear_in_index(mlp_prior_fns)
-    return networks.EnnWithAdditivePrior(enn, mlp_prior_fn, prior_scale)
+    return networks.EnnStateWithAdditivePrior(enn, mlp_prior_fn, prior_scale)
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: networks.EnnNoState) -> losses.LossFnNoState:
+                enn: networks.EnnArray) -> losses.LossFnArray:
     """You can override this function to try different loss functions."""
-    single_loss = losses.combine_single_index_losses_no_state_as_metric(
-        # This is the loss you are training on.
-        train_loss=losses.XentLoss(prior.num_classes),
-        # We will also log the accuracy in classification.
-        extra_losses={'acc': losses.AccuracyErrorLoss(prior.num_classes)},
+    single_loss = losses.combine_single_index_losses_as_metric(
+        train_loss=losses.XentLossWithState(prior.num_classes),
+        extra_losses={
+            'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+        },
     )
 
     # Adding bootstrapping
     boot_fn = data_noise.BootstrapNoise(enn, config.distribution, config.seed)
-    single_loss = losses.add_data_noise_no_state(single_loss, boot_fn)
+    single_loss = losses.add_data_noise(single_loss, boot_fn)
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss_no_state(single_loss,
-                                                        config.index_dim)
+    loss_fn = losses.average_single_index_loss(single_loss, config.index_dim)
 
     # Adding weight decay
     scale = config.l2_weight_decay
@@ -98,7 +96,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
     def predicate(module_name: str, name: str, value) -> bool:
       del name, value
       return 'prior' not in module_name
-    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale, predicate)
+    loss_fn = losses.add_l2_weight_decay(loss_fn, scale, predicate)
     return loss_fn
 
   def num_batches(prior: testbed_base.PriorKnowledge) -> int:

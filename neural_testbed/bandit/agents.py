@@ -75,28 +75,28 @@ def _make_bbb_bandit_loss(config: bbb.BBBConfig) -> agents.LossCtor:
   """BBB loss with decaying prior through time for sequential decisions."""
 
   def loss_ctor(prior: testbed_base.PriorKnowledge,
-                enn: networks.EnnNoState) -> losses.LossFnNoState:
+                enn: networks.EnnArray) -> losses.LossFnArray:
     del enn
     log_likelihood_fn = losses.get_categorical_loglike_fn(prior.num_classes)
     prior_kl_fn = losses.get_analytical_diagonal_linear_model_prior_kl_fn(
         1, config.sigma_1)
 
     def elbo_loss(
-        apply: networks.ApplyNoState,
+        apply: networks.ApplyArray,
         params: hk.Params,
+        state: hk.State,
         batch: enn_base.Batch,
         index: enn_base.Index,
-    ) -> Tuple[chex.Array, enn_base.LossMetrics]:
+    ) -> enn_base.LossOutput:
       """Elbo loss with decay per num_steps stored in the batch."""
-      out = apply(params, batch.x, index)
+      out, state = apply(params, state, batch.x, index)
       log_likelihood = log_likelihood_fn(out, batch)
       prior_kl = prior_kl_fn(out, params, index)
       chex.assert_equal_shape([log_likelihood, prior_kl])
       # Rescaling by num_steps and temperature
       prior_kl *= 2 * jnp.sqrt(prior.temperature) / batch.extra['num_steps']
-      return prior_kl - log_likelihood, {}
+      return prior_kl - log_likelihood, (state, {})
 
-    return losses.average_single_index_loss_no_state(elbo_loss,
-                                                     config.num_index_samples)
+    return losses.average_single_index_loss(elbo_loss, config.num_index_samples)
 
   return loss_ctor

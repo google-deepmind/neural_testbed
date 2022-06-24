@@ -79,7 +79,7 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
     """Wraps an ENN as a testbed agent, using sensible loss/bootstrapping."""
     enn = self.config.enn_ctor(prior)
     if self.config.center_train_data:
-      enn = networks.make_centered_enn_no_state(enn, data.x)
+      enn = networks.make_centered_enn(enn, data.x)
 
     enn_data = enn_base.Batch(data.x, data.y)
     dataset = utils.make_batch_iterator(
@@ -87,16 +87,12 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
 
     # TODO(author2): Complete prior loss refactor --> MultilossExperiment
     trainers = []
-    # TODO(author3): Change enn and losses to be with state and use
-    # MultilossTrainer instead of MultilossTrainerLegacy.
-    trainers.append(supervised.MultilossTrainerLegacy(
+    trainers.append(supervised.MultilossTrainer(
         loss_fn=self.config.loss_ctor(prior, enn),
         dataset=dataset,
     ))
     if self.config.prior_loss_ctor is not None:
-      # TODO(author3): Change enn and losses to be with state and use
-      # MultilossTrainer instead of MultilossTrainerLegacy.
-      trainers.append(supervised.MultilossTrainerLegacy(
+      trainers.append(supervised.MultilossTrainer(
           loss_fn=self.config.prior_loss_ctor(prior, enn),
           dataset=dataset,
           should_train=lambda step: step % self.config.prior_loss_freq == 0,
@@ -109,9 +105,7 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
     else:
       num_batches = self.config.num_batches(prior)
 
-    # TODO(author3): Change enn and losses to be with state and use
-    # MultilossExperiment instead of MultilossExperimentLegacy.
-    self.experiment = supervised.MultilossExperimentLegacy(
+    self.experiment = supervised.MultilossExperiment(
         enn=enn,
         trainers=trainers,
         optimizer=self.config.optimizer,

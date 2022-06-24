@@ -49,7 +49,7 @@ class BBBConfig:
 def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create a BBB agent."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
     """Makes ENN."""
     temperature = 1.
     if config.output_scale:
@@ -59,12 +59,10 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
         dummy_input=jnp.zeros(shape=(prior.input_dim,)),
         temperature=temperature)
 
-    enn = networks.wrap_enn_as_enn_no_state(enn)
-
     return enn
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: networks.EnnNoState) -> losses.LossFnNoState:
+                enn: networks.EnnArray) -> losses.LossFnArray:
     """Define the ENN architecture from the prior."""
     del enn
     # Loss assuming a classification task.
@@ -82,12 +80,14 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
       ValueError(f'Invalid kl_method={config.kl_method}')
 
     if config.adaptive_scale:
-      single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn,
-                                    prior.temperature, prior.input_dim)
+      single_loss = losses.ElboLossWithState(log_likelihood_fn,
+                                             model_prior_kl_fn,
+                                             prior.temperature, prior.input_dim)
     else:
-      single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn)
+      single_loss = losses.ElboLossWithState(log_likelihood_fn,
+                                             model_prior_kl_fn)
 
-    loss_fn = losses.average_single_index_loss_no_state(
+    loss_fn = losses.average_single_index_loss(
         single_loss, num_index_samples=config.num_index_samples)
     return loss_fn
 

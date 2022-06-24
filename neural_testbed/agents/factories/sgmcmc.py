@@ -56,7 +56,7 @@ def get_preconditioner(config: SGMCMCConfig):
 
 
 # ENN sampler for MCMC
-def extract_enn_sampler(enn: networks.EnnNoState,
+def extract_enn_sampler(enn: networks.EnnArray,
                         params_list) -> testbed_base.EpistemicSampler:
   """ENN sampler for MCMC."""
   def enn_sampler(x: chex.Array, key: chex.PRNGKey) -> chex.Array:
@@ -72,22 +72,22 @@ def extract_enn_sampler(enn: networks.EnnNoState,
 def make_agent(config: SGMCMCConfig):
   """Factory method to create a sgmcmc agent."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
     enn = networks.make_einsum_ensemble_mlp_enn(
         output_sizes=[config.num_hidden, config.num_hidden, prior.num_classes],
         num_ensemble=1,
         nonzero_bias=False,
     )
-    return networks.wrap_enn_as_enn_no_state(enn)
+    return enn
 
-  def make_loss(prior: testbed_base.PriorKnowledge) -> losses.LossFnNoState:
-    single_loss = losses.combine_single_index_losses_no_state_as_metric(
-        # This is the loss you are training on.
-        train_loss=losses.XentLoss(prior.num_classes),
-        # We will also log the accuracy in classification.
-        extra_losses={'acc': losses.AccuracyErrorLoss(prior.num_classes)},
+  def make_loss(prior: testbed_base.PriorKnowledge) -> losses.LossFnArray:
+    single_loss = losses.combine_single_index_losses_as_metric(
+        train_loss=losses.XentLossWithState(prior.num_classes),
+        extra_losses={
+            'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+        },
     )
-    loss_fn = losses.average_single_index_loss_no_state(single_loss, 1)
+    loss_fn = losses.average_single_index_loss(single_loss, 1)
     # Gaussian prior can be interpreted as a L2-weight decay.
     prior_variance = config.prior_variance
     # Scale prior_variance for large input_dim
@@ -95,7 +95,7 @@ def make_agent(config: SGMCMCConfig):
       prior_variance *= 2
     scale = (1 / prior_variance) * jnp.sqrt(
         prior.temperature) * prior.input_dim / prior.num_train
-    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=scale)
+    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 
   log_freq = int(config.num_batches / 50) or 1
@@ -114,7 +114,7 @@ def make_agent(config: SGMCMCConfig):
         temperature=config.alg_temperature/prior.num_train)
 
     # Define the experiment
-    sgd_experiment = supervised.ExperimentLegacy(
+    sgd_experiment = supervised.Experiment(
         enn=make_enn(prior),
         loss_fn=make_loss(prior),
         optimizer=optimizer_sgld,

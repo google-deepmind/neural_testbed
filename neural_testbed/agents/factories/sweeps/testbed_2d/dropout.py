@@ -46,28 +46,27 @@ def make_mc_dropout_agent(
     config: McDropoutConfig) -> agents.VanillaEnnAgent:
   """Factory method to create MC dropout agent."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
     enn = networks.MLPDropoutENN(
         output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         dropout_rate=config.dropout_rate,
         dropout_input=config.dropout_input,
         seed=config.seed,
     )
-    return networks.wrap_enn_as_enn_no_state(enn)
+    return enn
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: networks.EnnNoState) -> losses.LossFnNoState:
+                enn: networks.EnnArray) -> losses.LossFnArray:
     del enn
-    single_loss = losses.combine_single_index_losses_no_state_as_metric(
-        # This is the loss you are training on.
-        train_loss=losses.XentLoss(prior.num_classes),
-        # We will also log the accuracy in classification.
-        extra_losses={'acc': losses.AccuracyErrorLoss(prior.num_classes)},
+    single_loss = losses.combine_single_index_losses_as_metric(
+        train_loss=losses.XentLossWithState(prior.num_classes),
+        extra_losses={
+            'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+        },
     )
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss_no_state(
-        single_loss, num_index_samples=1)
+    loss_fn = losses.average_single_index_loss(single_loss, num_index_samples=1)
 
     # Adding a special weight regularization based on paper "Dropout as a
     # Bayesian Approximation: Representing Model Uncertainty in Deep Learning",
@@ -81,7 +80,7 @@ def make_mc_dropout_agent(
       predicate = lambda module, name, value: name != 'b'
     else:
       predicate = lambda module, name, value: True
-    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale, predicate)
+    loss_fn = losses.add_l2_weight_decay(loss_fn, scale, predicate)
     return loss_fn
 
   agent_config = agents.VanillaEnnConfig(

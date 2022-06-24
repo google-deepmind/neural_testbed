@@ -45,7 +45,7 @@ class EnsembleConfig:
 def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
   """Factory method to create a ensemble with prior."""
 
-  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnNoState:
+  def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
     prior_scale = config.prior_scale
     if config.temp_scale_prior == 'linear':
       prior_scale /= prior.temperature
@@ -60,32 +60,31 @@ def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
         prior_scale=prior_scale,
         seed=config.seed + 999,
     )
-    return networks.wrap_enn_as_enn_no_state(enn)
+    return enn
 
   def make_loss(prior: testbed_base.PriorKnowledge,
-                enn: networks.EnnNoState) -> losses.LossFnNoState:
+                enn: networks.EnnArray) -> losses.LossFnArray:
     """You can override this function to try different loss functions."""
-    single_loss = losses.combine_single_index_losses_no_state_as_metric(
-        # This is the loss you are training on.
-        train_loss=losses.XentLoss(prior.num_classes),
-        # We will also log the accuracy in classification.
-        extra_losses={'acc': losses.AccuracyErrorLoss(prior.num_classes)},
+    single_loss = losses.combine_single_index_losses_as_metric(
+        train_loss=losses.XentLossWithState(prior.num_classes),
+        extra_losses={
+            'acc': losses.AccuracyErrorLossWithState(prior.num_classes)
+        },
     )
 
     # Adding bootstrapping
     boot_fn = data_noise.BootstrapNoise(enn, config.distribution, config.seed)
-    single_loss = losses.add_data_noise_no_state(single_loss, boot_fn)
+    single_loss = losses.add_data_noise(single_loss, boot_fn)
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss_no_state(single_loss,
-                                                        config.num_ensemble)
+    loss_fn = losses.average_single_index_loss(single_loss, config.num_ensemble)
 
     # Adding weight decay
     scale = config.l2_weight_decay / config.num_ensemble
     scale /= prior.num_train
     if config.adaptive_weight_scale:
       scale *= np.sqrt(prior.temperature) * prior.input_dim
-    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=scale)
+    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 
   def batch_strategy(prior: testbed_base.PriorKnowledge) -> int:
