@@ -38,7 +38,7 @@ def normal_like_tree(a, key):
   treedef = jax.tree_structure(a)
   num_vars = len(jax.tree_leaves(a))
   all_keys = jax.random.split(key, num=(num_vars + 1))
-  noise = jax.tree_multimap(lambda p, k: jax.random.normal(k, shape=p.shape), a,
+  noise = jax.tree_map(lambda p, k: jax.random.normal(k, shape=p.shape), a,
                             jax.tree_unflatten(treedef, all_keys[1:]))
   return noise, all_keys[0]
 
@@ -98,7 +98,7 @@ def sgld_gradient_update(step_size,
     def update_momentum(m, g, n):
       return momentum_decay * m + g * jnp.sqrt(step_size) - n * noise_std
 
-    momentum = jax.tree_multimap(update_momentum, state.momentum, gradient,
+    momentum = jax.tree_map(update_momentum, state.momentum, gradient,
                                  noise)
     updates = preconditioner.multiply_by_m_inv(momentum, preconditioner_state)
     updates = jax.tree_map(lambda m: -m * jnp.sqrt(step_size), updates)
