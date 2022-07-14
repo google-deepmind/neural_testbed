@@ -54,7 +54,7 @@ setuptools.setup(
         'pandas',
         'plotnine',
         'tensorflow==2.8.0',
-        'tensorflow-datasets==4.5.2',
+        'tensorflow-datasets==4.4.0',
         'tensorflow_probability==0.15.0',
         'typing-extensions',
     ],

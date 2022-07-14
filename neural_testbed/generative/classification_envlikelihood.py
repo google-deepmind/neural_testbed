@@ -114,7 +114,7 @@ def make_gaussian_sampler(input_dim: int) -> XGenerator:
 # TODO(author2): Migrate to experimental directory.
 def make_weibull_sampler(input_dim: int) -> XGenerator:
   """Returns Weibull sampler around initial reference point."""
-  # TODO(smsaghari): Expose concentration and scale as parameters
+  # TODO(author3): Expose concentration and scale as parameters
   concentration = jnp.log10(jnp.log2(10))
   scale = 1 / (jnp.log(10)**(1 / concentration))
 
