@@ -63,7 +63,7 @@ def extract_enn_sampler(enn: networks.EnnArray,
     """Generate a random sample from posterior distribution at x."""
     # pylint: disable=cell-var-from-loop
     param_index = jax.random.randint(key, [], 0, len(params_list))
-    fns = [lambda x, w=p: enn.apply(w, x, 0) for p in params_list]
+    fns = [lambda x, w=p: enn.apply(w, x, 0) for p in params_list]  # pytype: disable=missing-parameter
     out = jax.lax.switch(param_index, fns, x)
     return networks.parse_net_output(out)
   return jax.jit(enn_sampler)
