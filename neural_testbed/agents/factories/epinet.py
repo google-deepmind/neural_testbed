@@ -53,7 +53,10 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
     # We only want to expose final hidden layer, so we set the flag for previous
     # hidden layer and final output layer to False and for the final hidden
     # layer to True.
-    expose_layers = [False,] * (len(config.hidden_sizes) - 1) + [True, False]
+    if config.hidden_sizes:
+      expose_layers = [False,] * (len(config.hidden_sizes) - 1) + [True, False]
+    else:
+      expose_layers = [False]
     enn = epinet.make_mlp_epinet(
         output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         epinet_hiddens=config.epi_hiddens,
