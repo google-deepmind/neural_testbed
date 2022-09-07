@@ -16,7 +16,7 @@
 """Factory methods for epinet agent."""
 
 import dataclasses
-from typing import Sequence
+from typing import Optional, Sequence
 
 from enn import data_noise
 from enn import losses
@@ -42,10 +42,13 @@ class EpinetConfig:
   epi_hiddens: Sequence[int] = (15, 15)  # Hidden sizes in epinet
   add_hiddens: Sequence[int] = (5, 5)  # Hidden sizes in additive prior
   seed: int = 0  # Initialization seed
+  override_index_samples: Optional[int] = None  # Set SGD training index samples
 
 
 def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create an epinet agent with ensemble prior."""
+
+  num_index_samples = config.override_index_samples or config.index_dim
 
   def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
     prior_scale = config.prior_scale / prior.temperature
@@ -90,7 +93,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
     single_loss = losses.add_data_noise(single_loss, boot_fn)
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss(single_loss, config.index_dim)
+    loss_fn = losses.average_single_index_loss(single_loss, num_index_samples)
 
     # Adding weight decay
     scale = config.l2_weight_decay
@@ -112,7 +115,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
       enn_ctor=make_enn,
       loss_ctor=make_loss,
       num_batches=num_batches,
-      prior_loss_ctor=agents.default_enn_prior_loss(config.index_dim),
+      prior_loss_ctor=agents.default_enn_prior_loss(num_index_samples),
       prior_loss_freq=config.prior_loss_freq,
       seed=config.seed,
   )
