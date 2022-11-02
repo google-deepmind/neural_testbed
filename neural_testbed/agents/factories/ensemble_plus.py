@@ -16,7 +16,7 @@
 """Factory methods for ensemble_plus agent."""
 
 import dataclasses
-from typing import Sequence
+from typing import  Optional, Sequence
 
 from enn import data_noise
 from enn import losses
@@ -40,10 +40,13 @@ class EnsembleConfig:
   num_batches: int = 1_000  # Number of SGD steps
   batch_strategy: bool = False  # Whether to scale num_batches with data ratio
   seed: int = 0  # Initialization seed
+  override_index_samples: Optional[int] = None  # Set SGD training index samples
 
 
 def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
   """Factory method to create a ensemble with prior."""
+
+  num_index_samples = config.override_index_samples or config.num_ensemble
 
   def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
     prior_scale = config.prior_scale
@@ -77,7 +80,8 @@ def make_agent(config: EnsembleConfig) -> testbed_base.TestbedAgent:
     single_loss = losses.add_data_noise(single_loss, boot_fn)
 
     # Averaging over index
-    loss_fn = losses.average_single_index_loss(single_loss, config.num_ensemble)
+    loss_fn = losses.average_single_index_loss(single_loss,
+                                               num_index_samples)
 
     # Adding weight decay
     scale = config.l2_weight_decay / config.num_ensemble
