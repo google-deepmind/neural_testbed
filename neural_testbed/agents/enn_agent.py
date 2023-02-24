@@ -81,7 +81,7 @@ class VanillaEnnAgent(testbed_base.TestbedAgent):
     if self.config.center_train_data:
       enn = networks.make_centered_enn(enn, data.x)
 
-    enn_data = enn_base.Batch(data.x, data.y)
+    enn_data = enn_base.Batch(x=data.x, y=data.y)
     dataset = utils.make_batch_iterator(
         enn_data, self.config.batch_size, self.config.seed)
 
@@ -148,7 +148,7 @@ def make_learning_curve_enn_agent(
   problem = getattr(problem, 'problem', problem)
   if isinstance(problem, likelihood.SampleBasedTestbed):
     # Convert the data to enn batch format
-    train_data = enn_base.Batch(problem.train_data.x, problem.train_data.y)
+    train_data = enn_base.Batch(x=problem.train_data.x, y=problem.train_data.y)
 
     # Generate a sample-based test dataset with num_test samples.
     def gen_test(key: chex.PRNGKey) -> testbed_base.Data:
@@ -157,7 +157,7 @@ def make_learning_curve_enn_agent(
 
     test_keys = jax.random.split(jax.random.PRNGKey(seed), num_test)
     test_data = jax.lax.map(gen_test, test_keys)
-    test_data = enn_base.Batch(test_data.x, test_data.y)
+    test_data = enn_base.Batch(x=test_data.x, y=test_data.y)
 
     # Pass out eval_datasets to experiment.
     eval_datasets = {

@@ -148,7 +148,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
     """Output uniform class probabilities."""
     rng = hk.PRNGSequence(config.seed)
 
-    enn_data = enn_base.Batch(data.x, data.y)
+    enn_data = enn_base.Batch(x=data.x, y=data.y)
     dataset = utils.make_batch_iterator(enn_data, config.batch_size,
                                         config.seed)
 

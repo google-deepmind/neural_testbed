@@ -197,12 +197,16 @@ class ThompsonEnnBandit:
   def _get_batch(self) -> enn_base.Batch:
     actions, rewards, indices = self.replay.sample(self._batch_size)
     return enn_base.Batch(
-        actions, rewards, indices, extra={'num_steps': self.num_steps})
+        x=actions,
+        y=rewards,
+        data_index=indices,
+        extra={'num_steps': self.num_steps},
+    )
 
 
-def _random_argmax(vals: chex.Array,
-                   key: chex.PRNGKey,
-                   scale: float = 1e-7) -> int:
+def _random_argmax(
+    vals: chex.Array, key: chex.PRNGKey, scale: float = 1e-7
+) -> int:
   """Select argmax with additional random noise."""
   noise = jax.random.uniform(key, vals.shape)
   return jnp.argmax(vals + scale * noise, axis=0)

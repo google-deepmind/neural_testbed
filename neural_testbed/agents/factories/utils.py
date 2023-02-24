@@ -37,5 +37,5 @@ def extract_enn_sampler(
 
 def make_iterator(data: testbed_base.Data,
                   batch_size: Optional[int] = None) -> enn_base.BatchIterator:
-  batch = enn_base.Batch(data.x, data.y)
+  batch = enn_base.Batch(x=data.x, y=data.y)
   return utils.make_batch_iterator(batch, batch_size)

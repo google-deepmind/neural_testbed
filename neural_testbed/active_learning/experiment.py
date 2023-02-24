@@ -213,14 +213,20 @@ class ActiveLearning:
     """Samples a batch from the replay."""
     actions, rewards, indices = self.replay.sample(self._batch_size)
     return enn_base.Batch(
-        actions, rewards, indices, extra={'num_steps': self.num_steps})
+        x=actions,
+        y=rewards,
+        data_index=indices,
+        extra={'num_steps': self.num_steps},
+    )
 
 
-def _make_test_problem(logit_fn: generative.LogitFn,
-                       prior: testbed_base.PriorKnowledge,
-                       input_dim: int,
-                       key: chex.PRNGKey,
-                       num_classes: int = 2) -> likelihood.SampleBasedTestbed:
+def _make_test_problem(
+    logit_fn: generative.LogitFn,
+    prior: testbed_base.PriorKnowledge,
+    input_dim: int,
+    key: chex.PRNGKey,
+    num_classes: int = 2,
+) -> likelihood.SampleBasedTestbed:
   """Makes the test environment."""
   sampler_key, kl_key = jax.random.split(key)
   # Defining dummy values for x_train_generator and num_train. These values are
