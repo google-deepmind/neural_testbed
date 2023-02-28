@@ -135,7 +135,7 @@ class MlpWithActivations(hk.Module):
       if i < (num_layers - 1):  # don't activate final layer
         out = self.activation(out)
 
-    return (out, penultimate_out)
+    return (out, penultimate_out)  # pytype: disable=bad-return-type  # jax-ndarray
 
 
 def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
