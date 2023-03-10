@@ -33,7 +33,7 @@ import functools
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence
 
 import chex
-from enn import base as enn_base
+from enn import datasets
 from enn import losses
 from enn import utils
 import haiku as hk
@@ -148,7 +148,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
     """Output uniform class probabilities."""
     rng = hk.PRNGSequence(config.seed)
 
-    enn_data = enn_base.Batch(x=data.x, y=data.y)
+    enn_data = datasets.ArrayBatch(x=data.x, y=data.y)
     dataset = utils.make_batch_iterator(enn_data, config.batch_size,
                                         config.seed)
 

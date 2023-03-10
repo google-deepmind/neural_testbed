@@ -22,6 +22,7 @@ from acme.utils import loggers
 import chex
 from enn import active_learning
 from enn import base as enn_base
+from enn import datasets
 from enn import losses
 from enn import networks
 import haiku as hk
@@ -81,7 +82,7 @@ class ActiveLearning:
     def loss_with_decay(
         params: hk.Params,
         state: hk.State,
-        batch: enn_base.Batch,
+        batch: datasets.ArrayBatch,
         key: chex.PRNGKey) -> enn_base.LossOutput:
       # Adding annealing l2 weight decay manually
       data_loss, (state, metrics) = loss_fn(params, state, batch, key)
@@ -97,7 +98,7 @@ class ActiveLearning:
     def sgd_step(
         params: hk.Params,
         opt_state: optax.OptState,
-        batch: enn_base.Batch,
+        batch: datasets.ArrayBatch,
         key: chex.PRNGKey,
     ) -> tp.Tuple[hk.Params, optax.OptState]:
       unused_state = {}
@@ -155,7 +156,7 @@ class ActiveLearning:
       # Randomly generate rewards for each action.
       rewards = jax.random.bernoulli(noise_key, self.probs)
       # Get the priority score for each action.
-      batch = enn_base.Batch(x=self.actions, y=rewards)
+      batch = datasets.ArrayBatch(x=self.actions, y=rewards)
       dummy_state = {}
       priorities, _ = self.priority_fn(params, dummy_state, batch, priority_key)
       # Pick an action with the highest priority (with additional random noise).
@@ -209,10 +210,10 @@ class ActiveLearning:
     ])
     return int(results['action'])
 
-  def _get_batch(self) -> enn_base.Batch:
+  def _get_batch(self) -> datasets.ArrayBatch:
     """Samples a batch from the replay."""
     actions, rewards, indices = self.replay.sample(self._batch_size)
-    return enn_base.Batch(
+    return datasets.ArrayBatch(
         x=actions,
         y=rewards,
         data_index=indices,

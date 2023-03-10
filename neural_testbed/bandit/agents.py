@@ -23,6 +23,7 @@ from typing import Tuple
 
 import chex
 from enn import base as enn_base
+from enn import datasets
 from enn import losses
 from enn import networks
 import haiku as hk
@@ -85,7 +86,7 @@ def _make_bbb_bandit_loss(config: bbb.BBBConfig) -> agents.LossCtor:
         apply: networks.ApplyArray,
         params: hk.Params,
         state: hk.State,
-        batch: enn_base.Batch,
+        batch: datasets.ArrayBatch,
         index: enn_base.Index,
     ) -> enn_base.LossOutput:
       """Elbo loss with decay per num_steps stored in the batch."""

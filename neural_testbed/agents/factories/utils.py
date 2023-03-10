@@ -18,7 +18,7 @@
 from typing import Optional
 
 import chex
-from enn import base as enn_base
+from enn import datasets
 from enn import networks
 from enn import supervised
 from enn import utils
@@ -27,15 +27,18 @@ from neural_testbed import base as testbed_base
 
 
 def extract_enn_sampler(
-    experiment: supervised.BaseExperiment) -> testbed_base.EpistemicSampler:
+    experiment: supervised.BaseExperiment,
+) -> testbed_base.EpistemicSampler:
   def enn_sampler(x: chex.Array, key: chex.PRNGKey) -> chex.Array:
     """Generate a random sample from posterior distribution at x."""
     net_out = experiment.predict(x, key)
     return networks.parse_net_output(net_out)
+
   return jax.jit(enn_sampler)
 
 
-def make_iterator(data: testbed_base.Data,
-                  batch_size: Optional[int] = None) -> enn_base.BatchIterator:
-  batch = enn_base.Batch(x=data.x, y=data.y)
+def make_iterator(
+    data: testbed_base.Data, batch_size: Optional[int] = None
+) -> datasets.ArrayBatchIterator:
+  batch = datasets.ArrayBatch(x=data.x, y=data.y)
   return utils.make_batch_iterator(batch, batch_size)

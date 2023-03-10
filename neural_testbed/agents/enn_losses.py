@@ -20,6 +20,7 @@ from typing import Callable, Optional
 import chex
 from enn import base as enn_base
 from enn import data_noise
+from enn import datasets
 from enn import losses
 from enn import networks
 from neural_testbed import base as testbed_base
@@ -121,7 +122,7 @@ def regularized_dropout_loss(num_index_samples: int = 10,
 
 # Module specialized to work only with Array inputs and Batch data.
 _LossConfig = losses.CombineLossConfig[chex.Array, enn_base.Output,
-                                       enn_base.Batch]
+                                       datasets.ArrayBatch]
 
 
 def combine_loss_prior_loss(loss_fn: losses.LossFnArray,
