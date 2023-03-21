@@ -183,7 +183,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
     )
     single_loss = losses.wrap_single_loss_as_single_loss_no_state(single_loss)
     loss_fn = losses.average_single_index_loss_no_state(single_loss,)
-    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=weight_decay)
+    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=weight_decay)  # pytype: disable=wrong-arg-types  # jax-types
     loss_fn = jax.jit(functools.partial(loss_fn, net))
 
     optimizer = optax.adam(config.learning_rate)

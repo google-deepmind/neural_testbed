@@ -95,7 +95,7 @@ def make_agent(config: SGMCMCConfig):
       prior_variance *= 2
     scale = (1 / prior_variance) * jnp.sqrt(
         prior.temperature) * prior.input_dim / prior.num_train
-    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
+    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)  # pytype: disable=wrong-arg-types  # jax-types
     return loss_fn
 
   log_freq = int(config.num_batches / 50) or 1

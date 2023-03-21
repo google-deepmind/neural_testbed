@@ -32,7 +32,7 @@ def gaussian_log_likelihood(err: chex.Array,
   first_term = len(err) * jnp.log(2 * jnp.pi)
   _, second_term = jnp.linalg.slogdet(cov)
   third_term = jnp.einsum('ai,ab,bi->i', err, jnp.linalg.pinv(cov), err)
-  return -0.5 * (first_term + second_term + third_term)
+  return -0.5 * (first_term + second_term + third_term)  # pytype: disable=bad-return-type  # jax-types
 
 
 def optimized_gaussian_ll(err: chex.Array) -> float:

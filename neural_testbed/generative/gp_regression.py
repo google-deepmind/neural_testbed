@@ -190,4 +190,4 @@ def _kl_gaussian(
   """Computes the KL(P_1 || P_2) for P_1,P_2 univariate Gaussian."""
   log_term = jnp.log(std_2 / std_1)
   frac_term = (std_1 ** 2 + (mean_1 - mean_2) ** 2) / (2 * std_2 ** 2)
-  return log_term + frac_term - 0.5
+  return log_term + frac_term - 0.5  # pytype: disable=bad-return-type  # jax-types
