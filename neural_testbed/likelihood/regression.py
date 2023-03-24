@@ -73,7 +73,7 @@ class GaussianSampleKL(likelihood_base.SampleBasedKL):
       chex.assert_shape(sampled_ll, [self.num_enn_samples, 1])
 
       # TODO(author2): Make sure of our KL computation.()
-      ave_ll = metrics_base.average_sampled_log_likelihood(sampled_ll)
+      ave_ll = metrics_base.average_sampled_log_likelihood(sampled_ll)  # pytype: disable=wrong-arg-types  # numpy-scalars
       return true_ll - ave_ll
 
     batched_kl = jax.jit(jax.vmap(kl_estimate))

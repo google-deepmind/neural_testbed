@@ -165,7 +165,7 @@ class ActiveLearning:
       chosen_prob = self.probs[action]
       reward = rewards[action]
       regret = self.max_prob - chosen_prob
-      return {
+      return {  # pytype: disable=bad-return-type  # numpy-scalars
           'action': action,
           'reward': reward,
           'regret': regret,
@@ -213,7 +213,7 @@ class ActiveLearning:
   def _get_batch(self) -> datasets.ArrayBatch:
     """Samples a batch from the replay."""
     actions, rewards, indices = self.replay.sample(self._batch_size)
-    return datasets.ArrayBatch(
+    return datasets.ArrayBatch(  # pytype: disable=wrong-arg-types  # numpy-scalars
         x=actions,
         y=rewards,
         data_index=indices,
