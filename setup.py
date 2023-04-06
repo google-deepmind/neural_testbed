@@ -23,22 +23,24 @@ import setuptools
 testing_require = [
     'mock',
     'pytest-xdist',
-    'pytype',
+    'pytype==2021.8.11',  # to be compatible with dm-acme
 ]
 
 setuptools.setup(
     name='neural_testbed',
     description=(
         'Neural testbed. '
-        'A library for evaluating probabilistic inference in neural networks.'),
+        'A library for evaluating probabilistic inference in neural networks.'
+    ),
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/deepmind/neural_testbed',
     author='DeepMind',
     author_email='neural-testbed-eng+os@google.com',
     license='Apache License, Version 2.0',
-    version=imp.load_source('_metadata',
-                            'neural_testbed/_metadata.py').__version__,
+    version=imp.load_source(
+        '_metadata', 'neural_testbed/_metadata.py'
+    ).__version__,
     keywords='probabilistic-inference python machine-learning',
     packages=setuptools.find_packages(),
     install_requires=[
@@ -53,9 +55,9 @@ setuptools.setup(
         'numpy',
         'pandas',
         'plotnine',
-        'tensorflow==2.8.0',
-        'tensorflow-datasets==4.4.0',
-        'tensorflow_probability==0.15.0',
+        'tensorflow==2.8.0',  # to be compatible with dm-acme
+        'tensorflow-datasets==4.6.0',  # to be compatible with dm-acme
+        'tensorflow_probability==0.15.0',  # to be compatible with dm-acme
         'typing-extensions',
     ],
     extras_require={
