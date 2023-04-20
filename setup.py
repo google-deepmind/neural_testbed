@@ -59,6 +59,8 @@ setuptools.setup(
         'tensorflow-datasets==4.6.0',  # to be compatible with dm-acme
         'tensorflow_probability==0.15.0',  # to be compatible with dm-acme
         'typing-extensions',
+        'protobuf==3.20.0',  # to avoid Typeerror: descriptors cannot not be 
+        # created directly
     ],
     extras_require={
         'testing': testing_require,

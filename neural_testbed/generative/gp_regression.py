@@ -27,17 +27,16 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 import neural_tangents as nt
-from neural_tangents._src.utils import typing as nt_types
-
 from neural_testbed import base as testbed_base
 from neural_testbed import likelihood
+from neural_testbed.generative import nt_kernels
 
 
 class GPRegression(likelihood.GenerativeDataSampler):
   """GP with gaussian noise output."""
 
   def __init__(self,
-               kernel_fn: nt_types.AnalyticKernelFn,
+               kernel_fn: nt_kernels.AnalyticKernelFn,
                x_train: chex.Array,
                x_test: chex.Array,
                key: chex.PRNGKey,
