@@ -91,7 +91,7 @@ def _check_drop_duplicate_logs(df: pd.DataFrame,
     # Drop duplicate problem_id in case they got logged several times.
     df = df.drop_duplicates('problem_id')
 
-  return df
+  return df  # pytype: disable=bad-return-type  # typed-pandas
 
 
 def _fix_legacy_problem_id(df: pd.DataFrame) -> pd.DataFrame:
