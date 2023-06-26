@@ -19,9 +19,9 @@
 import dataclasses
 from typing import Callable, Dict, Optional, Union
 
-from acme.utils import loggers
 import chex
 from enn import datasets
+from enn import loggers
 from enn import networks
 from enn import supervised
 from enn import utils
