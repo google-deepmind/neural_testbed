@@ -263,7 +263,7 @@ def _random_argmax(vals: chex.Array,
                    scale: float = 1e-5) -> int:
   """Selects argmax with additional random noise."""
   noise = jax.random.normal(key, vals.shape)
-  return jnp.argmax(vals + scale * noise, axis=0)
+  return jnp.argmax(vals + scale * noise, axis=0)  # pytype: disable=bad-return-type  # jnp-type
 
 
 def _clean_results(results: tp.Dict[str, tp.Any]) -> tp.Dict[str, tp.Any]:

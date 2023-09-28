@@ -36,7 +36,7 @@ def compute_discrete_kl(p: chex.Array, q: chex.Array) -> float:
   q = jnp.squeeze(q)
   assert jnp.shape(p) == jnp.shape(q)
 
-  return jnp.nansum(jnp.multiply(p, jnp.log(p) - jnp.log(q)))
+  return jnp.nansum(jnp.multiply(p, jnp.log(p) - jnp.log(q)))  # pytype: disable=bad-return-type  # jnp-type
 
 
 @dataclasses.dataclass

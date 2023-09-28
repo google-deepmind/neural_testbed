@@ -210,4 +210,4 @@ def _random_argmax(
 ) -> int:
   """Select argmax with additional random noise."""
   noise = jax.random.uniform(key, vals.shape)
-  return jnp.argmax(vals + scale * noise, axis=0)
+  return jnp.argmax(vals + scale * noise, axis=0)  # pytype: disable=bad-return-type  # jnp-type

@@ -74,5 +74,5 @@ def parse_kl_estimates(kl_estimates: chex.Array) -> testbed_base.ENNQuality:
       'test_ece': None,
       'pct_finite_kl': float(pct_finite_kl)
   }
-  return testbed_base.ENNQuality(kl_estimate=kl_estimate, extra=extra)
+  return testbed_base.ENNQuality(kl_estimate=kl_estimate, extra=extra)  # pytype: disable=wrong-arg-types  # jnp-type
 

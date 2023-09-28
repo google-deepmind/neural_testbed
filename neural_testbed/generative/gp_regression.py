@@ -181,7 +181,7 @@ class TestbedGPRegression(testbed_base.TestbedProblem):
     kl_estimates = batched_kl(posterior_mean, posterior_std, enn_mean, enn_std)
     chex.assert_shape(kl_estimates, [num_test])
     kl_estimate = jnp.mean(kl_estimates)
-    return testbed_base.ENNQuality(kl_estimate)
+    return testbed_base.ENNQuality(kl_estimate)  # pytype: disable=wrong-arg-types  # jnp-type
 
 
 def _kl_gaussian(

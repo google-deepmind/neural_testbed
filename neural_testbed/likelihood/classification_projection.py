@@ -273,7 +273,7 @@ class RandomProjection(ClusterAlg):
         return (numerator + 1e-6) / (denominator + 1e-6)
 
       single_center = jax.vmap(single_center_per_t, in_axes=[None, 0])
-      map_fn = lambda x: single_center(x, jnp.arange(tau))
+      map_fn = lambda x: single_center(x, jnp.arange(tau))  # pytype: disable=wrong-arg-types  # jnp-type
       all_centers = jax.lax.map(map_fn, features)
       chex.assert_shape(all_centers, [num_features, tau])
 
