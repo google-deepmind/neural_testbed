@@ -19,7 +19,7 @@
 import dataclasses
 from typing import Any, List, Optional, Tuple, TypeVar, Union
 
-from jax import random
+import jax
 import jax.numpy as np
 import neural_tangents as nt
 from neural_tangents import stax
@@ -50,7 +50,7 @@ class InitFn(Protocol):
 
   def __call__(
       self,
-      rng: random.KeyArray,
+      rng: jax.Array,
       input_shape: Shapes,
       **kwargs
   ) -> Tuple[Shapes, PyTree]:
