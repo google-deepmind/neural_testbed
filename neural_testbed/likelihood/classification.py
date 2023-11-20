@@ -183,12 +183,14 @@ def add_classification_accuracy_ece(
   ) -> testbed_base.ENNQuality:
     """Returns KL estimate and classification accuracy as ENN quality metrics."""
     enn_quality = sample_based_kl(enn_sampler, data_sampler)
-
+    extra = enn_quality.extra
+    if extra is None:
+      raise ValueError('enn_quality.extra')  # for pytype
     # Attempt to use jitted code, but if the enn_sampler is not able to
     # jax.jit then skip adding accuracy.
     try:
       eval_stats = sample_based_acc_ece(enn_sampler, data_sampler)
-      enn_quality.extra.update(eval_stats)
+      extra.update(eval_stats)
     except (jax.errors.JAXTypeError, jax.errors.JAXIndexError) as e:
       print(f'Skipping accuracy. The enn_sampler not jittable due to \n{e}')
     return testbed_base.ENNQuality(
