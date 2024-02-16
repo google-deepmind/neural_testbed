@@ -22,7 +22,6 @@ from absl.testing import parameterized
 
 import haiku as hk
 import jax
-import jax.config
 import jax.numpy as jnp
 
 from neural_testbed.generative import nt_kernels

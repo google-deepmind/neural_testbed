@@ -21,7 +21,7 @@ import itertools
 from absl.testing import absltest
 from absl.testing import parameterized
 import haiku as hk
-import jax.config
+import jax
 from neural_testbed.generative import gp_regression
 from neural_testbed.generative import nt_kernels
 import numpy as np
