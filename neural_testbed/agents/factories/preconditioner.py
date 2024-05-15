@@ -51,27 +51,39 @@ def get_rmsprop_preconditioner(running_average_factor=0.99, eps=1e-7):
 
   def init_fn(params):
     return RMSPropPreconditionerState(
-        grad_moment_estimates=jax.tree_map(jnp.zeros_like, params))
+        grad_moment_estimates=jax.tree.map(jnp.zeros_like, params)
+    )
 
   def update_preconditioner_fn(gradient, preconditioner_state):
     r = running_average_factor
-    grad_moment_estimates = jax.tree_map(
-        lambda e, g: e * r + g**2 *(1-r),
-        preconditioner_state.grad_moment_estimates, gradient)
+    grad_moment_estimates = jax.tree.map(
+        lambda e, g: e * r + g**2 * (1 - r),
+        preconditioner_state.grad_moment_estimates,
+        gradient,
+    )
     return RMSPropPreconditionerState(
         grad_moment_estimates=grad_moment_estimates)
 
   def multiply_by_m_inv_fn(vec, preconditioner_state):
-    return jax.tree_map(lambda e, v: v / (eps + jnp.sqrt(e)),
-                             preconditioner_state.grad_moment_estimates, vec)
+    return jax.tree.map(
+        lambda e, v: v / (eps + jnp.sqrt(e)),
+        preconditioner_state.grad_moment_estimates,
+        vec,
+    )
 
   def multiply_by_m_sqrt_fn(vec, preconditioner_state):
-    return jax.tree_map(lambda e, v: v * jnp.sqrt(eps + jnp.sqrt(e)),
-                             preconditioner_state.grad_moment_estimates, vec)
+    return jax.tree.map(
+        lambda e, v: v * jnp.sqrt(eps + jnp.sqrt(e)),
+        preconditioner_state.grad_moment_estimates,
+        vec,
+    )
 
   def multiply_by_m_sqrt_inv_fn(vec, preconditioner_state):
-    return jax.tree_map(lambda e, v: v / jnp.sqrt(eps + jnp.sqrt(e)),
-                             preconditioner_state.grad_moment_estimates, vec)
+    return jax.tree.map(
+        lambda e, v: v / jnp.sqrt(eps + jnp.sqrt(e)),
+        preconditioner_state.grad_moment_estimates,
+        vec,
+    )
 
   return Preconditioner(
       init=init_fn,

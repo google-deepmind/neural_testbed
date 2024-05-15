@@ -35,11 +35,14 @@ PreconditionerState = NamedTuple  # State of a preconditioner
 
 def normal_like_tree(a, key):
   """Generate Gaussian noises."""
-  treedef = jax.tree_structure(a)
-  num_vars = len(jax.tree_leaves(a))
+  treedef = jax.tree.structure(a)
+  num_vars = len(jax.tree.leaves(a))
   all_keys = jax.random.split(key, num=(num_vars + 1))
-  noise = jax.tree_map(lambda p, k: jax.random.normal(k, shape=p.shape), a,
-                            jax.tree_unflatten(treedef, all_keys[1:]))
+  noise = jax.tree.map(
+      lambda p, k: jax.random.normal(k, shape=p.shape),
+      a,
+      jax.tree.unflatten(treedef, all_keys[1:]),
+  )
   return noise, all_keys[0]
 
 
@@ -82,8 +85,9 @@ def sgld_gradient_update(step_size,
     return OptaxSGLDState(
         count=jnp.zeros([], jnp.int32),
         rng_key=jax.random.PRNGKey(seed),
-        momentum=jax.tree_map(jnp.zeros_like, params),
-        preconditioner_state=preconditioner.init(params))
+        momentum=jax.tree.map(jnp.zeros_like, params),
+        preconditioner_state=preconditioner.init(params),
+    )
 
   def update_fn(gradient, state, params=None):
     del params
@@ -98,10 +102,9 @@ def sgld_gradient_update(step_size,
     def update_momentum(m, g, n):
       return momentum_decay * m + g * jnp.sqrt(step_size) - n * noise_std
 
-    momentum = jax.tree_map(update_momentum, state.momentum, gradient,
-                                 noise)
+    momentum = jax.tree.map(update_momentum, state.momentum, gradient, noise)
     updates = preconditioner.multiply_by_m_inv(momentum, preconditioner_state)
-    updates = jax.tree_map(lambda m: -m * jnp.sqrt(step_size), updates)
+    updates = jax.tree.map(lambda m: -m * jnp.sqrt(step_size), updates)
     return updates, OptaxSGLDState(
         count=state.count + 1,
         rng_key=new_key,
