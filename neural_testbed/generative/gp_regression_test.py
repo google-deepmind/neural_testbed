@@ -14,8 +14,6 @@
 # limitations under the License.
 # ============================================================================
 
-"""Tests for neural_testbed.generative.gp_regression."""
-
 import itertools
 
 from absl.testing import absltest
@@ -29,6 +27,8 @@ import numpy as np
 # This is necessary to prevent nans.
 # TODO(author6): Look into fixing the nans and removing this.
 jax.config.update('jax_enable_x64', True)
+
+jax.config.update('jax_threefry_partitionable', False)
 
 
 class GPRegressionTest(parameterized.TestCase):
