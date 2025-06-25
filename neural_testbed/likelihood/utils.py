@@ -48,7 +48,7 @@ def log_sum_prod(nu: chex.Array, q_hat: chex.Array) -> float:
   # Use rebasing trick to maintain numerical stability
   base = jnp.max(log_prod_qs)
   ll = jsp.logsumexp(log_prod_qs - base, b=nu) + base
-  return ll
+  return ll  # pytype: disable=bad-return-type
 
 
 def parse_kl_estimates(kl_estimates: chex.Array) -> testbed_base.ENNQuality:
