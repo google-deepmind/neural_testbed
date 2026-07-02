@@ -57,7 +57,7 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
     enn = networks.make_bbb_enn(
         base_output_sizes=list(config.hidden_sizes) + [prior.num_classes],
         dummy_input=jnp.zeros(shape=(prior.input_dim,)),
-        temperature=temperature)
+        temperature=temperature)  # pyrefly: ignore[bad-argument-type]
 
     return enn
 
@@ -80,10 +80,10 @@ def make_agent(config: BBBConfig) -> enn_agent.VanillaEnnAgent:
       ValueError(f'Invalid kl_method={config.kl_method}')
 
     if config.adaptive_scale:
-      single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn,
+      single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn,  # pyrefly: ignore[unbound-name]
                                     prior.temperature, prior.input_dim)
     else:
-      single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn)
+      single_loss = losses.ElboLoss(log_likelihood_fn, model_prior_kl_fn)  # pyrefly: ignore[unbound-name]
 
     loss_fn = losses.average_single_index_loss(
         single_loss, num_index_samples=config.num_index_samples)

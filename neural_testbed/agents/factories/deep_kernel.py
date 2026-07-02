@@ -170,7 +170,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
 
     # use the same weight_decay heuristic as other agents
     weight_decay = (
-        config.weight_decay * jnp.sqrt(prior.temperature) * prior.input_dim /
+        config.weight_decay * jnp.sqrt(prior.temperature) * prior.input_dim /  # pyrefly: ignore[bad-argument-type]
         prior.num_train)
 
     single_loss = losses.combine_single_index_losses_as_metric(
@@ -194,7 +194,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
           loss_fn, has_aux=True)(state.params, batch, None)
       updates, new_opt_state = optimizer.update(grads, state.opt_state)
       new_params = optax.apply_updates(state.params, updates)
-      return TrainingState(new_params, new_opt_state)
+      return TrainingState(new_params, new_opt_state)  # pyrefly: ignore[bad-argument-type]
 
     state = TrainingState(params, opt_state)
     for _ in range(config.num_train_steps):
@@ -213,7 +213,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
     _, phi_x = predict_fn_t.apply(state.params, next(d).x)
 
     # at high temperature there is higher sampling noise
-    sigma_squared = config.sigma_squared_factor * prior.temperature
+    sigma_squared = config.sigma_squared_factor * prior.temperature  # pyrefly: ignore[unsupported-operation]
     # [num_features, num_features]
     m = sigma_squared * jnp.eye(phi_x.shape[1]) + phi_x.T @ phi_x
     m_half = jax.scipy.linalg.cholesky(m, lower=True, overwrite_a=True)
@@ -234,7 +234,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
 
       scale = (
           config.scale_factor * jnp.sqrt(sigma_squared) /
-          jnp.sqrt(prior.num_train) / jnp.sqrt(prior.temperature))
+          jnp.sqrt(prior.num_train) / jnp.sqrt(prior.temperature))  # pyrefly: ignore[bad-argument-type]
       # [B_test, num_classes]
       return mean_s + scale * phi_s @ sample  # sampled logit from posterior
 

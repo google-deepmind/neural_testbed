@@ -154,7 +154,7 @@ class KmeansCluster(ClusterAlg):
     num_enn_samples, tau, num_classes = probits.shape
 
     if self.cluster_only_correct_class:
-      flat_probits = probits[:, jnp.arange(tau), y.ravel()]
+      flat_probits = probits[:, jnp.arange(tau), y.ravel()]  # pyrefly: ignore[bad-index]
       chex.assert_shape(flat_probits, [num_enn_samples, tau])
     else:
       flat_probits = jnp.reshape(probits, [num_enn_samples, tau * num_classes])
@@ -176,7 +176,7 @@ class KmeansCluster(ClusterAlg):
     if self.cluster_only_correct_class:
       probits_correct = flat_probits
     else:
-      probits_correct = probits[:, jnp.arange(tau), y.ravel()]
+      probits_correct = probits[:, jnp.arange(tau), y.ravel()]  # pyrefly: ignore[bad-index]
       chex.assert_shape(probits_correct, [num_enn_samples, tau])
 
     probs_correct = jsp.ndtr(probits_correct)
@@ -186,7 +186,7 @@ class KmeansCluster(ClusterAlg):
     chex.assert_shape(probs_correct_centers, [self.num_centroids, tau])
 
     # normalize prob_correct_centers
-    counts_denominator = counts[:, None]
+    counts_denominator = counts[:, None]  # pyrefly: ignore[bad-index]
     chex.assert_shape(counts_denominator, [self.num_centroids, 1])
 
     probs_correct_centers = jnp.divide(probs_correct_centers + 5e-10,
@@ -215,7 +215,7 @@ class RandomProjection(ClusterAlg):
       chex.assert_rank(probits, 3)
       num_enn_samples, tau, num_classes = probits.shape
       if self.cluster_only_correct_class:
-        flat_probits = probits[:, jnp.arange(tau), y.ravel()]
+        flat_probits = probits[:, jnp.arange(tau), y.ravel()]  # pyrefly: ignore[bad-index]
         target_shape = [num_enn_samples, tau]
       else:
         flat_probits = jnp.reshape(
@@ -286,4 +286,4 @@ def _select_label(probs: chex.Array, y: chex.Array) -> chex.Array:
   chex.assert_rank(probs, 2)
   labels = jnp.squeeze(y, axis=1)
   chex.assert_rank(labels, 1)
-  return probs[jnp.arange(probs.shape[0]), labels]
+  return probs[jnp.arange(probs.shape[0]), labels]  # pyrefly: ignore[bad-index]

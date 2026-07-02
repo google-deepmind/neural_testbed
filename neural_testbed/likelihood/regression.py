@@ -29,7 +29,7 @@ from neural_testbed.likelihood import base as likelihood_base
 def gaussian_log_likelihood(err: chex.Array,
                             cov: chex.Array) -> float:
   """Calculates the Gaussian log likelihood of a multivariate normal."""
-  first_term = len(err) * jnp.log(2 * jnp.pi)
+  first_term = len(err) * jnp.log(2 * jnp.pi)  # pyrefly: ignore[bad-argument-type]
   _, second_term = jnp.linalg.slogdet(cov)
   third_term = jnp.einsum('ai,ab,bi->i', err, jnp.linalg.pinv(cov), err)
   return -0.5 * (first_term + second_term + third_term)  # pytype: disable=bad-return-type  # jax-types
@@ -37,7 +37,7 @@ def gaussian_log_likelihood(err: chex.Array,
 
 def optimized_gaussian_ll(err: chex.Array) -> float:
   """Computes the Gaussian LL based on optimized residual MSE."""
-  optimized_cov = jnp.mean(err ** 2) * jnp.eye(len(err))
+  optimized_cov = jnp.mean(err ** 2) * jnp.eye(len(err))  # pyrefly: ignore[bad-argument-type]
   return gaussian_log_likelihood(err, optimized_cov)
 
 

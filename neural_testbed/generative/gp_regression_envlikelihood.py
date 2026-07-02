@@ -58,9 +58,9 @@ class GPRegressionEnvLikelihood(likelihood.GenerativeDataSampler):
     mean = jnp.zeros(num_train + num_test_x_cache)
     get_kernel = 'ntk' if ntk else 'nngp'
     combined_x = jnp.vstack([self._x_train, self._x_test])
-    kernel = kernel_fn(combined_x, x2=None, get=get_kernel)
-    kernel += kernel_ridge * jnp.eye(len(kernel))
-    y_function = jax.random.multivariate_normal(next(rng), mean, kernel)
+    kernel = kernel_fn(combined_x, x2=None, get=get_kernel)  # pyrefly: ignore[bad-argument-type]
+    kernel += kernel_ridge * jnp.eye(len(kernel))  # pyrefly: ignore[bad-argument-type, unsupported-operation]
+    y_function = jax.random.multivariate_normal(next(rng), mean, kernel)  # pyrefly: ignore[bad-argument-type]
     chex.assert_shape(y_function, [num_train + num_test_x_cache,])
 
     # Form the training data

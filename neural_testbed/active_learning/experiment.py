@@ -70,7 +70,7 @@ class ActiveLearning:
     )
     self.observed_actions = set()
     self.enn = enn_config.enn_ctor(prior)
-    batch_fwd = networks.make_batch_fwd(self.enn)
+    batch_fwd = networks.make_batch_fwd(self.enn)  # pyrefly: ignore[bad-argument-type]
     self.priority_fn = jax.jit(priority_fn_ctor(batch_fwd))
     loss_fn = enn_config.loss_ctor(prior, self.enn)
     loss_fn = functools.partial(loss_fn, self.enn)
@@ -106,7 +106,7 @@ class ActiveLearning:
           loss_with_decay, has_aux=True)(params, unused_state, batch, key)
       updates, new_opt_state = optimizer.update(grads, opt_state)
       new_params = optax.apply_updates(params, updates)
-      return new_params, new_opt_state
+      return new_params, new_opt_state  # pyrefly: ignore[bad-return]
     self._sgd_step = jax.jit(sgd_step)
 
     # Generating the underlying function
@@ -192,7 +192,7 @@ class ActiveLearning:
             'num_steps': self.num_steps,
             'num_data': len(self.observed_actions),
         }
-        results.update(_clean_results(enn_quality.extra))
+        results.update(_clean_results(enn_quality.extra))  # pyrefly: ignore[bad-argument-type]
         self.logger.write(results)
 
       for _ in range(self._steps_per_obs):
@@ -217,7 +217,7 @@ class ActiveLearning:
         x=actions,
         y=rewards,
         data_index=indices,
-        extra={'num_steps': self.num_steps},
+        extra={'num_steps': self.num_steps},  # pyrefly: ignore[bad-argument-type]
     )
 
 

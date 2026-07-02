@@ -71,11 +71,11 @@ class TestbedProblem(abc.ABC):
   """An interface for specifying a generative GP model of data."""
 
   @abc.abstractproperty
-  def train_data(self) -> Data:
+  def train_data(self) -> Data:  # pyrefly: ignore[bad-return]
     """Access training data from the GP for ENN training."""
 
   @abc.abstractproperty
-  def prior_knowledge(self) -> PriorKnowledge:
+  def prior_knowledge(self) -> PriorKnowledge:  # pyrefly: ignore[bad-return]
     """Information describing the problem instance."""
 
   @abc.abstractmethod

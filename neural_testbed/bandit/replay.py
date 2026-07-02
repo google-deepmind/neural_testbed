@@ -51,7 +51,7 @@ class Replay:
     if self._data is None:
       self._preallocate(items)
 
-    for slot, item in zip(self._data, items):
+    for slot, item in zip(self._data, items):  # pyrefly: ignore[bad-argument-type]
       slot[self._num_added % self._capacity] = item
 
     self._num_added += 1
@@ -59,7 +59,7 @@ class Replay:
   def sample(self, size: int) -> Sequence[np.ndarray]:
     """Returns a transposed/stacked minibatch. Each array has shape [B, ...]."""
     indices = np.random.randint(self.size, size=size)
-    return [slot[indices] for slot in self._data]
+    return [slot[indices] for slot in self._data]  # pyrefly: ignore[not-iterable]
 
   def reset(self,):
     """Resets the replay."""

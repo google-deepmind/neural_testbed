@@ -63,7 +63,7 @@ def make_agent(config: VanillaEnsembleConfig) -> enn_agent.VanillaEnnAgent:
     scale = config.l2_weight_decay / config.num_ensemble
     scale /= prior.num_train
     if config.adaptive_weight_scale:
-      scale *= np.sqrt(prior.temperature) * prior.input_dim
+      scale *= np.sqrt(prior.temperature) * prior.input_dim  # pyrefly: ignore[no-matching-overload]
     loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 

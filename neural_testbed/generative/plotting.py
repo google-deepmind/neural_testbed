@@ -36,7 +36,7 @@ def set_gg_theme():
   try:
     # TODO(author2): Understand why this is causing errors in testing.
     gg.theme_set(gg.theme_bw(base_size=16, base_family='serif'))
-    gg.theme_update(figure_size=(12, 8), panel_spacing=0.5)
+    gg.theme_update(figure_size=(12, 8), panel_spacing=0.5)  # pyrefly: ignore[bad-argument-type]
   except RuntimeError:
     pass
 
@@ -92,8 +92,8 @@ def _gen_samples(enn_sampler: testbed_base.EpistemicSampler,
   rng = hk.PRNGSequence(jax.random.PRNGKey(seed=0))
   for seed in range(num_samples):
     net_out = enn_sampler(x, next(rng))
-    y = jax.nn.softmax(net_out)[:, 1] if categorical else net_out[:, 0]
-    data.append(pd.DataFrame({'x': x[:, 0], 'y': y, 'seed': seed}))
+    y = jax.nn.softmax(net_out)[:, 1] if categorical else net_out[:, 0]  # pyrefly: ignore[bad-index]
+    data.append(pd.DataFrame({'x': x[:, 0], 'y': y, 'seed': seed}))  # pyrefly: ignore[bad-index]
   sample_df = pd.concat(data)
 
   # Aggregate the samples for plotting
@@ -114,11 +114,11 @@ def plot_1d_regression(gp_model: gp_regression.GPRegression,
   """Plots 1D regression with confidence intervals."""
   # Training data
   train_data = gp_model.train_data
-  df = pd.DataFrame({'x': train_data.x[:, 0], 'y': train_data.y[:, 0]})
+  df = pd.DataFrame({'x': train_data.x[:, 0], 'y': train_data.y[:, 0]})  # pyrefly: ignore[bad-index]
   # Posterior data
   posterior_df = pd.DataFrame({
-      'x': gp_model.x_test[:, 0],
-      'y': gp_model.test_mean[:, 0],
+      'x': gp_model.x_test[:, 0],  # pyrefly: ignore[bad-index]
+      'y': gp_model.test_mean[:, 0],  # pyrefly: ignore[bad-index]
       'std': np.sqrt(np.diag(gp_model.test_cov)),
   })
   posterior_df['method'] = 'gp'
@@ -129,8 +129,8 @@ def plot_1d_regression(gp_model: gp_regression.GPRegression,
        + gg.geom_ribbon(gg.aes(fill='method'), alpha=0.25)
        + gg.geom_line(gg.aes(colour='method'), size=2)
        + gg.geom_point(gg.aes(x='x', y='y'), data=df, size=4, inherit_aes=False)
-       + gg.scale_colour_manual(['#e41a1c', '#377eb8'])
-       + gg.scale_fill_manual(['#e41a1c', '#377eb8'])
+       + gg.scale_colour_manual(['#e41a1c', '#377eb8'])  # pyrefly: ignore[bad-argument-type, missing-argument]
+       + gg.scale_fill_manual(['#e41a1c', '#377eb8'])  # pyrefly: ignore[bad-argument-type, missing-argument]
       )
   return p
 
@@ -172,8 +172,8 @@ def plot_1d_classification(true_model,  # TODO(author2): add typing
                        size=5, colour='#377eb8', inherit_aes=False)
        + gg.geom_point(gg.aes(x='x', y='y'), data=df[df.y == 0],
                        size=5, colour='#e41a1c', inherit_aes=False)
-       + gg.scale_colour_manual(['green', 'black'])
-       + gg.scale_fill_manual(['green', 'black'])
+       + gg.scale_colour_manual(['green', 'black'])  # pyrefly: ignore[bad-argument-type, missing-argument]
+       + gg.scale_fill_manual(['green', 'black'])  # pyrefly: ignore[bad-argument-type, missing-argument]
        + gg.ylab('probability of class 1')
        + gg.xlab(f'x[0] of {input_dim}-dimensional input.')
       )
@@ -205,7 +205,7 @@ def investigate_1d_regression_model(
       tau=100,
   )
   train_data = data_sampler.train_data
-  df = pd.DataFrame({'x': train_data.x[:, 0], 'y': train_data.y[:, 0]})
+  df = pd.DataFrame({'x': train_data.x[:, 0], 'y': train_data.y[:, 0]})  # pyrefly: ignore[bad-index]
   plt_df = pd.DataFrame({
       'x': x_test[:, 0],
       'mean': data_sampler._test_mean[:, 0],  # pylint:disable=protected-access
@@ -247,10 +247,10 @@ def _gen_samples_2d(enn_sampler: testbed_base.EpistemicSampler,
   rng = hk.PRNGSequence(jax.random.PRNGKey(seed=0))
   for seed in range(num_samples):
     net_out = enn_sampler(x, next(rng))
-    y = jax.nn.softmax(net_out)[:, 1] if categorical else net_out[:, 0]
-    df = pd.DataFrame({'x0': x[:, 0], 'x1': x[:, 1], 'y': y, 'seed': seed})
+    y = jax.nn.softmax(net_out)[:, 1] if categorical else net_out[:, 0]  # pyrefly: ignore[bad-index]
+    df = pd.DataFrame({'x0': x[:, 0], 'x1': x[:, 1], 'y': y, 'seed': seed})  # pyrefly: ignore[bad-index]
     data.append(df)
-  return pd.concat(data)
+  return pd.concat(data)  # pyrefly: ignore[bad-return]
 
 
 def _agg_samples_2d(sample_df: pd.DataFrame) -> pd.DataFrame:
@@ -294,7 +294,7 @@ def _plot_default_2d(problem_df: pd.DataFrame,
        + gg.aes(x='x0', y='x1', fill='y')
        + gg.geom_tile()
        + gg.geom_point(data=train_df, size=3, stroke=1.5, alpha=0.7)
-       + gg.scale_fill_gradient2(BLUE, 'white', RED, midpoint=0.5)
+       + gg.scale_fill_gradient2(BLUE, 'white', RED, midpoint=0.5)  # pyrefly: ignore[bad-argument-type]
        + gg.facet_wrap('method')
        + gg.theme(figure_size=(12, 5))
        + gg.ggtitle('Comparing ENN and true probabilities')
@@ -316,7 +316,7 @@ def _plot_expanded_2d(problem_df: pd.DataFrame,
        + gg.geom_tile()
        + gg.geom_point(gg.aes(fill='y'), data=train_df, size=3, stroke=1.5,
                        alpha=0.7)
-       + gg.scale_fill_gradient2(BLUE, 'white', RED, midpoint=0.5)
+       + gg.scale_fill_gradient2(BLUE, 'white', RED, midpoint=0.5)  # pyrefly: ignore[bad-argument-type]
        + gg.facet_wrap('variable')
        + gg.theme(figure_size=(12, 10))
        + gg.ggtitle('Comparing ENN and true probabilities'))
@@ -330,7 +330,7 @@ def _plot_error_2d(problem_df: pd.DataFrame, enn_df: pd.DataFrame,
       enn_df, problem_df, on=['x0', 'x1'], suffixes=('_enn', '_problem'))
   p = (gg.ggplot(plt_df)
        + gg.aes(x='x0', y='x1', fill='y_problem - y_enn')
-       + gg.scale_fill_gradient2(BLUE, 'white', RED, midpoint=0)
+       + gg.scale_fill_gradient2(BLUE, 'white', RED, midpoint=0)  # pyrefly: ignore[bad-argument-type]
        + gg.geom_tile()
        + gg.geom_point(gg.aes(x='x0', y='x1', fill='y'), data=train_df, size=3,
                        stroke=1.5, inherit_aes=False, show_legend=False)
@@ -345,11 +345,11 @@ def _plot_std_2d(enn_df: pd.DataFrame,
   """Single plot of standard deviation in ENN predications."""
   p = (gg.ggplot(enn_df)
        + gg.aes(x='x0', y='x1', fill='std')
-       + gg.scale_fill_gradient2('white', '#005a32', '#ffff33', midpoint=0.1)
+       + gg.scale_fill_gradient2('white', '#005a32', '#ffff33', midpoint=0.1)  # pyrefly: ignore[bad-argument-type]
        + gg.geom_tile()
        + gg.geom_point(gg.aes(x='x0', y='x1', colour='y'), data=train_df,
                        size=3, inherit_aes=False, show_legend=False, alpha=0.7)
-       + gg.scale_colour_gradient(BLUE, RED, limits=[0, 1])
+       + gg.scale_colour_gradient(BLUE, RED, limits=[0, 1])  # pyrefly: ignore[bad-argument-type]
        + gg.theme(figure_size=(7, 5))
        + gg.ggtitle('Standard deviation in ENN predications')
        )
@@ -363,7 +363,7 @@ def _plot_enn_samples_2d(sample_df: pd.DataFrame,
        + gg.aes(x='x0', y='x1', fill='y')
        + gg.geom_tile()
        + gg.geom_point(data=train_df, size=3, stroke=1.5)
-       + gg.scale_fill_gradient2(BLUE, 'white', RED, midpoint=0.5)
+       + gg.scale_fill_gradient2(BLUE, 'white', RED, midpoint=0.5)  # pyrefly: ignore[bad-argument-type]
        + gg.facet_wrap('seed', labeller='label_both')
        + gg.theme(figure_size=(18, 12), panel_spacing=0.1)
        + gg.ggtitle('ENN sample realizations')

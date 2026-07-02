@@ -62,9 +62,9 @@ class GPRegression(likelihood.GenerativeDataSampler):
 
     # Form the training data
     mean = jnp.zeros(num_train)
-    k_train_train = kernel_fn(self._x_train, x2=None, get='nngp')
-    k_train_train += kernel_ridge * jnp.eye(num_train)
-    y_function = jax.random.multivariate_normal(next(rng), mean, k_train_train)
+    k_train_train = kernel_fn(self._x_train, x2=None, get='nngp')  # pyrefly: ignore[bad-argument-type]
+    k_train_train += kernel_ridge * jnp.eye(num_train)  # pyrefly: ignore[unsupported-operation]
+    y_function = jax.random.multivariate_normal(next(rng), mean, k_train_train)  # pyrefly: ignore[bad-argument-type]
     y_noise = jax.random.normal(next(rng), [num_train, 1]) * noise_std
     y_train = y_function[:, None] + y_noise
     self._train_data = testbed_base.Data(x_train, y_train)
@@ -72,7 +72,7 @@ class GPRegression(likelihood.GenerativeDataSampler):
 
     # Form the posterior prediction at cached test data
     predict_fn = nt.predict.gradient_descent_mse_ensemble(
-        kernel_fn, x_train, y_train, diag_reg=(noise_std**2))
+        kernel_fn, x_train, y_train, diag_reg=(noise_std**2))  # pyrefly: ignore[bad-argument-type]
     self._test_mean, self._test_cov = predict_fn(
         t=None, x_test=self._x_test, get='nngp', compute_cov=True)
     self._test_cov += kernel_ridge * jnp.eye(num_test_x_cache)
@@ -163,7 +163,7 @@ class TestbedGPRegression(testbed_base.TestbedProblem):
     # Extract useful quantities from the gp sampler.
     x_test = self.data_sampler.x_test
     num_test = x_test.shape[0]
-    posterior_mean = self.data_sampler.test_mean[:, 0]
+    posterior_mean = self.data_sampler.test_mean[:, 0]  # pyrefly: ignore[bad-index]
     posterior_std = jnp.sqrt(jnp.diag(self.data_sampler.test_cov))
     posterior_std += self.std_ridge
 

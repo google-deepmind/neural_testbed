@@ -51,7 +51,7 @@ def make_agent(config: EpinetConfig) -> enn_agent.VanillaEnnAgent:
   num_index_samples = config.override_index_samples or config.index_dim
 
   def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
-    prior_scale = config.prior_scale / prior.temperature
+    prior_scale = config.prior_scale / prior.temperature  # pyrefly: ignore[unsupported-operation]
 
     # We only want to expose final hidden layer, so we set the flag for previous
     # hidden layer and final output layer to False and for the final hidden

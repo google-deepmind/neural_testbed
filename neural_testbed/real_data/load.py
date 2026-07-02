@@ -119,7 +119,7 @@ def _load_regression(
       num_test_seeds=int(problem_config.num_test_seeds
                          / prior_knowledge.tau) + 1,
       num_enn_samples=problem_config.num_enn_samples,
-      enn_sigma=prior_knowledge.noise_std,
+      enn_sigma=prior_knowledge.noise_std,  # pyrefly: ignore[bad-argument-type]
       key=next(rng),
   )
   return likelihood.SampleBasedTestbed(

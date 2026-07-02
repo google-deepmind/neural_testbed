@@ -40,14 +40,14 @@ class MLPConfig:
 
 def make_mlp_agent(config: MLPConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create a baseline MLP agent."""
-  config = ensemble.VanillaEnsembleConfig(
+  config = ensemble.VanillaEnsembleConfig(  # pyrefly: ignore[bad-assignment]
       num_ensemble=1,
       l2_weight_decay=config.l2_weight_decay,
       adaptive_weight_scale=config.adaptive_weight_scale,
       hidden_sizes=config.hidden_sizes,
       num_batches=config.num_batches,
       seed=config.seed)
-  return ensemble.make_agent(config)
+  return ensemble.make_agent(config)  # pyrefly: ignore[bad-argument-type]
 
 
 @dataclasses.dataclass
@@ -61,14 +61,14 @@ class LogisticRegressionConfig:
 def make_logistic_regression_agent(
     config: LogisticRegressionConfig) -> enn_agent.VanillaEnnAgent:
   """Factory method to create a baseline logistic regression agent."""
-  config = ensemble.VanillaEnsembleConfig(
+  config = ensemble.VanillaEnsembleConfig(  # pyrefly: ignore[bad-assignment]
       num_ensemble=1,
       l2_weight_decay=config.l2_weight_decay,
       adaptive_weight_scale=config.adaptive_weight_scale,
       hidden_sizes=(),
       num_batches=config.num_batches,
       seed=config.seed)
-  return ensemble.make_agent(config)
+  return ensemble.make_agent(config)  # pyrefly: ignore[bad-argument-type]
 
 
 def logistic_regression_sweep() -> Sequence[LogisticRegressionConfig]:

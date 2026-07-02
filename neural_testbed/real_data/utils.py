@@ -144,14 +144,14 @@ def load_regression_dataset(
     raise ValueError(f'dataset {dataset_name} is not supported yet.')
   x, y = get_uci_data(dataset_name)
   if len(y.shape) == 1:
-    y = y[:, None]
+    y = y[:, None]  # pyrefly: ignore[bad-index]
   train_test_split = 0.8
   random_permutation = np.random.permutation(x.shape[0])
   n_train = int(x.shape[0] * train_test_split)
   train_ind = random_permutation[:n_train]
   test_ind = random_permutation[n_train:]
-  x_train, y_train = x[train_ind, :], y[train_ind, :]
-  x_test, y_test = x[test_ind, :], y[test_ind, :]
+  x_train, y_train = x[train_ind, :], y[train_ind, :]  # pyrefly: ignore[bad-index]
+  x_test, y_test = x[test_ind, :], y[test_ind, :]  # pyrefly: ignore[bad-index]
 
   x_mean, x_std = np.mean(x_train, axis=0), np.std(x_train, axis=0)
   y_mean = np.mean(y_train, axis=0)

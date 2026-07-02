@@ -80,7 +80,7 @@ def _load_classification(
   if problem_config.logit_ctor is None:
     logit_fn = generative.make_2layer_mlp_logit_fn(
         input_dim=input_dim,
-        temperature=prior_knowledge.temperature,
+        temperature=prior_knowledge.temperature,  # pyrefly: ignore[bad-argument-type]
         hidden=50,
         num_classes=prior_knowledge.num_classes,
         key=next(rng),
@@ -179,7 +179,7 @@ def _load_regression(
         x_test=x_test,
         key=next(rng),
         tau=prior_knowledge.tau,
-        noise_std=prior_knowledge.noise_std,
+        noise_std=prior_knowledge.noise_std,  # pyrefly: ignore[bad-argument-type]
     )
     return generative.TestbedGPRegression(
         data_sampler,
@@ -193,14 +193,14 @@ def _load_regression(
       x_test=x_test,
       key=next(rng),
       tau=prior_knowledge.tau,
-      noise_std=prior_knowledge.noise_std,
+      noise_std=prior_knowledge.noise_std,  # pyrefly: ignore[bad-argument-type]
   )
   sample_based_kl = likelihood.GaussianSampleKL(
       # This KL estimator cannot handle very large num_test_seed * tau
       num_test_seeds=int(problem_config.num_test_seeds
                          / prior_knowledge.tau) + 1,
       num_enn_samples=problem_config.num_enn_samples,
-      enn_sigma=prior_knowledge.noise_std,
+      enn_sigma=prior_knowledge.noise_std,  # pyrefly: ignore[bad-argument-type]
       key=next(rng),
   )
   return likelihood.SampleBasedTestbed(

@@ -95,9 +95,9 @@ def _make_bbb_bandit_loss(config: bbb.BBBConfig) -> agents.LossCtor:
       prior_kl = prior_kl_fn(out, params, index)
       chex.assert_equal_shape([log_likelihood, prior_kl])
       # Rescaling by num_steps and temperature
-      prior_kl *= 2 * jnp.sqrt(prior.temperature) / batch.extra['num_steps']
+      prior_kl *= 2 * jnp.sqrt(prior.temperature) / batch.extra['num_steps']  # pyrefly: ignore[bad-argument-type]
       return prior_kl - log_likelihood, (state, {})
 
-    return losses.average_single_index_loss(elbo_loss, config.num_index_samples)
+    return losses.average_single_index_loss(elbo_loss, config.num_index_samples)  # pyrefly: ignore[bad-argument-type]
 
   return loss_ctor

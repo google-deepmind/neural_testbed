@@ -94,7 +94,7 @@ class ThompsonEnnBandit:
       index = self.enn.indexer(key)
       unused_state = {}
       out, unused_state = self.enn.apply(params, unused_state, inputs, index)
-      return out
+      return out  # pyrefly: ignore[bad-return]
     self._forward = jax.jit(forward)
 
     # Perform an SGD step on a batch of data
@@ -109,7 +109,7 @@ class ThompsonEnnBandit:
           loss_with_decay, has_aux=True)(params, unused_state, batch, key)
       updates, new_opt_state = optimizer.update(grads, opt_state)
       new_params = optax.apply_updates(params, updates)
-      return new_params, new_opt_state
+      return new_params, new_opt_state  # pyrefly: ignore[bad-return]
     self._sgd_step = jax.jit(sgd_step)
 
     # Generating the underlying function
@@ -172,7 +172,7 @@ class ThompsonEnnBandit:
     for _ in range(num_steps):
       self.num_steps += 1
       regret = self.step()
-      self.total_regret += regret
+      self.total_regret += regret  # pyrefly: ignore[bad-assignment]
       if self.num_steps % log_freq == 0:
         self.logger.write({
             'total_regret': self.total_regret,
@@ -201,7 +201,7 @@ class ThompsonEnnBandit:
         x=actions,
         y=rewards,
         data_index=indices,
-        extra={'num_steps': self.num_steps},
+        extra={'num_steps': self.num_steps},  # pyrefly: ignore[bad-argument-type]
     )
 
 

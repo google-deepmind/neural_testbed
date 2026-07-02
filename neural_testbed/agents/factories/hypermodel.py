@@ -54,9 +54,9 @@ def make_hypermodel_agent(
   def make_enn(prior: testbed_base.PriorKnowledge) -> networks.EnnArray:
     prior_scale = config.prior_scale
     if config.temp_scale_prior == 'lin':
-      prior_scale /= prior.temperature
+      prior_scale /= prior.temperature  # pyrefly: ignore[unsupported-operation]
     elif config.temp_scale_prior == 'sqrt':
-      prior_scale /= float(jnp.sqrt(prior.temperature))
+      prior_scale /= float(jnp.sqrt(prior.temperature))  # pyrefly: ignore[bad-argument-type]
     else:
       pass
     enn = networks.MLPHypermodelPriorIndependentLayers(
@@ -96,7 +96,7 @@ def make_hypermodel_agent(
     scale = config.l2_weight_decay
     scale /= prior.num_train
     if config.adaptive_weight_scale:
-      scale *= np.sqrt(prior.temperature) * prior.input_dim
+      scale *= np.sqrt(prior.temperature) * prior.input_dim  # pyrefly: ignore[no-matching-overload]
     loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)
     return loss_fn
 

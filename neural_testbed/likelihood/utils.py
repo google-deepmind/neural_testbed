@@ -56,8 +56,8 @@ def parse_kl_estimates(kl_estimates: chex.Array) -> testbed_base.ENNQuality:
   # TODO(author5): This section of the code is designed to clip errant inf.
   # We don't exactly know why this is happening but decide to clip infinite
   # estimate by the maximum finite KL and record the number of inf estimates.
-  kl_estimates_finite = kl_estimates[jnp.isfinite(kl_estimates)]
-  pct_finite_kl = len(kl_estimates_finite) / len(kl_estimates)
+  kl_estimates_finite = kl_estimates[jnp.isfinite(kl_estimates)]  # pyrefly: ignore[bad-index]
+  pct_finite_kl = len(kl_estimates_finite) / len(kl_estimates)  # pyrefly: ignore[bad-argument-type]
   kl_estimate_max = jax.lax.cond(
       len(kl_estimates_finite) >= 1,
       lambda _: jnp.max(_, initial=-jnp.inf),

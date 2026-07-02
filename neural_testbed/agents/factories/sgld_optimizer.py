@@ -111,4 +111,4 @@ def sgld_gradient_update(step_size,
         momentum=momentum,
         preconditioner_state=preconditioner_state)
 
-  return GradientTransformation(init_fn, update_fn)
+  return GradientTransformation(init_fn, update_fn)  # pyrefly: ignore[bad-argument-type]

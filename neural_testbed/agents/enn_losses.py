@@ -82,7 +82,7 @@ def gaussian_regression_loss(num_index_samples: int,
   def loss_ctor(prior: testbed_base.PriorKnowledge,
                 enn: networks.EnnArray) -> losses.LossFnArray:
     """Add a matching Gaussian noise to the target y."""
-    noise_std = noise_scale * prior.noise_std
+    noise_std = noise_scale * prior.noise_std  # pyrefly: ignore[unsupported-operation]
     noise_fn = data_noise.GaussianTargetNoise(enn, noise_std)
     single_loss = losses.add_data_noise(losses.L2Loss(), noise_fn)
     loss_fn = losses.average_single_index_loss(single_loss, num_index_samples)
@@ -133,7 +133,7 @@ def combine_loss_prior_loss(loss_fn: losses.LossFnArray,
   if prior_loss_fn is None:
     return loss_fn
   else:
-    return losses.combine_losses([
+    return losses.combine_losses([  # pyrefly: ignore[bad-argument-type]
         _LossConfig(loss_fn, 'loss'),
         _LossConfig(prior_loss_fn, 'prior', weight),
     ])

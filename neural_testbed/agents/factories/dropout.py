@@ -73,7 +73,7 @@ def make_mc_dropout_agent(
     scale = (config.length_scale**2) * (1 - config.dropout_rate) / (
         2. * prior.num_train * config.regularization_tau)
     if config.adaptive_weight_scale:
-      scale = config.length_scale * np.sqrt(
+      scale = config.length_scale * np.sqrt(  # pyrefly: ignore[no-matching-overload]
           prior.temperature) * prior.input_dim / prior.num_train
     if config.exclude_bias_l2:
       predicate = lambda module, name, value: name != 'b'

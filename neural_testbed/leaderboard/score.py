@@ -293,7 +293,7 @@ def combine_leaderboards(boards: Sequence[LeaderboardData]) -> LeaderboardData:
   sweep_vars = []
   names = []
   for board in boards:
-    sweep_vars.extend(board.sweep_vars)
+    sweep_vars.extend(board.sweep_vars)  # pyrefly: ignore[bad-argument-type]
     for agent in board.agents:
       agents.append(agent)
       if agent.name not in names:
@@ -323,4 +323,4 @@ def _make_leaderboard_dataframe(
         df[col] = 'nan'  # This column was completely missing
       except ValueError:
         pass  # This column did not want to be coerced to 'nan'
-  return df
+  return df  # pyrefly: ignore[bad-return]

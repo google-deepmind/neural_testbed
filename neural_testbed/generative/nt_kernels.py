@@ -142,17 +142,17 @@ class MLPKernelCtor(KernelCtor):
         stax.Dense(limit_width, W_std=1, b_std=1 / np.sqrt(input_dim))
     ]
     for _ in range(self.num_hidden_layers - 1):
-      layers.append(self.activation)
+      layers.append(self.activation)  # pyrefly: ignore[bad-argument-type]
       layers.append(stax.Dense(limit_width, W_std=1, b_std=0))
-    layers.append(self.activation)
+    layers.append(self.activation)  # pyrefly: ignore[bad-argument-type]
     layers.append(stax.Dense(1, W_std=1, b_std=0))
     _, _, kernel = stax.serial(*layers)
-    return kernel
+    return kernel  # pyrefly: ignore[bad-return]
 
 
 def make_benchmark_kernel(input_dim: int = 1) -> AnalyticKernelFn:
   """Creates the benchmark kernel used in leaderboard = 2-layer ReLU."""
-  kernel_ctor = MLPKernelCtor(num_hidden_layers=2, activation=stax.Relu())
+  kernel_ctor = MLPKernelCtor(num_hidden_layers=2, activation=stax.Relu())  # pyrefly: ignore[bad-argument-type]
   return kernel_ctor(input_dim)
 
 
@@ -162,4 +162,4 @@ def make_linear_kernel(input_dim: int = 1) -> AnalyticKernelFn:
       stax.Dense(1, W_std=1, b_std=1 / np.sqrt(input_dim)),
   ]
   _, _, kernel = stax.serial(*layers)
-  return kernel
+  return kernel  # pyrefly: ignore[bad-return]

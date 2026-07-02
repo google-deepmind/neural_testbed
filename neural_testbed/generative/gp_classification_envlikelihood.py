@@ -60,12 +60,12 @@ class GPClassificationEnvLikelihood(likelihood.GenerativeDataSampler):
     mean = jnp.zeros(num_train + num_test_x_cache)
     get_kernel = 'ntk' if ntk else 'nngp'
     combined_x = jnp.vstack([self._x_train, self._x_test])
-    kernel = kernel_fn(combined_x, x2=None, get=get_kernel)
-    kernel += kernel_ridge * jnp.eye(len(kernel))
+    kernel = kernel_fn(combined_x, x2=None, get=get_kernel)  # pyrefly: ignore[bad-argument-type]
+    kernel += kernel_ridge * jnp.eye(len(kernel))  # pyrefly: ignore[bad-argument-type, unsupported-operation]
 
     def sample_environment_probs(key: chex.PRNGKey) -> chex.Array:
       """Samples environment class probabilities for the data."""
-      sample_logit = lambda x: jax.random.multivariate_normal(x, mean, kernel)
+      sample_logit = lambda x: jax.random.multivariate_normal(x, mean, kernel)  # pyrefly: ignore[bad-argument-type]
       sample_all_class_logits = jax.vmap(sample_logit, out_axes=1)
       logits = sample_all_class_logits(jax.random.split(key, num_classes))
       return jax.nn.softmax(logits / temperature)  # [data, classes]
@@ -82,13 +82,13 @@ class GPClassificationEnvLikelihood(likelihood.GenerativeDataSampler):
     def sample_output(probs: chex.Array, key: chex.PRNGKey) -> chex.Array:
       return jax.random.choice(key, num_classes, p=probs)
 
-    train_probs = self._probabilities[:num_train]
+    train_probs = self._probabilities[:num_train]  # pyrefly: ignore[bad-index]
     train_keys = jax.random.split(next(rng), num_train)
     batched_sample = jax.jit(jax.vmap(sample_output))
     y_train = batched_sample(train_probs, train_keys)[:, None]
     self._train_data = testbed_base.Data(x=self._x_train, y=y_train)
 
-    self._test_probs = self._probabilities[num_train:]
+    self._test_probs = self._probabilities[num_train:]  # pyrefly: ignore[bad-index]
 
   @property
   def train_data(self) -> testbed_base.Data:

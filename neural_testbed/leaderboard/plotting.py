@@ -101,7 +101,7 @@ def compute_ranking(data: score.LeaderboardData,
   evaltime_df = _compute_mean(df, column_name='evaluation_seconds')
   rank_df = pd.merge(rank_df, evaltime_df, on='agent_name', how='left')
   # TODO(author2): Work out what's going wrong with unhashable hypers e.g. list.
-  for var in data.sweep_vars:
+  for var in data.sweep_vars:  # pyrefly: ignore[not-iterable]
     try:
       df[var].unique()
     except TypeError:
@@ -111,7 +111,7 @@ def compute_ranking(data: score.LeaderboardData,
   # Adding in the normalized values
   df['normalized_kl'] = df['mean_kl_estimate'] / normalizing_score
   df['normalized_stderr'] = df['stderr_kl'] / normalizing_score
-  out_df = df.sort_values('normalized_kl').reset_index().drop({'index'}, axis=1)
+  out_df = df.sort_values('normalized_kl').reset_index().drop({'index'}, axis=1)  # pyrefly: ignore[no-matching-overload]
   # TODO(author2): Find a better way to limit KL in output plots.
   return out_df[out_df.normalized_kl < kl_limit]
 

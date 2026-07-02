@@ -155,7 +155,7 @@ def make_learning_curve_enn_agent(
     # Generate a sample-based test dataset with num_test samples.
     def gen_test(key: chex.PRNGKey) -> testbed_base.Data:
       data, _ = problem.data_sampler.test_data(key)
-      return testbed_base.Data(x=data.x[0, :], y=data.y[0, :])
+      return testbed_base.Data(x=data.x[0, :], y=data.y[0, :])  # pyrefly: ignore[bad-index]
 
     test_keys = jax.random.split(jax.random.PRNGKey(seed), num_test)
     test_data = jax.lax.map(gen_test, test_keys)
