@@ -125,7 +125,7 @@ class CategoricalClusterKL(likelihood_base.SampleBasedKL):
       """Estimates the KL for one realization of the data."""
       data, true_ll = test_data_fn(key)
       logits = get_logits(data.x)
-      return true_ll - joint_ll_calculator(logits, data.y)
+      return true_ll - joint_ll_calculator(logits, data.y)  # pyrefly: ignore[bad-return]
 
     kl_keys = jax.random.split(kl_key, self.num_test_seeds)
     try:
