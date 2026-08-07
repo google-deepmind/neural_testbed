@@ -36,7 +36,7 @@ class GPRegressionEnvLikelihood(likelihood.GenerativeDataSampler):
                key: chex.PRNGKey,
                tau: int = 1,
                noise_std: float = 1,
-               kernel_ridge: float = 1e-6,
+               kernel_ridge: float = 1e-5,
                ntk: bool = False):
 
     # Checking the dimensionality of our data coming in.
