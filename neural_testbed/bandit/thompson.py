@@ -160,7 +160,7 @@ class ThompsonEnnBandit:
       reward = jax.random.bernoulli(noise_key, chosen_prob)
       regret = self.max_prob - chosen_prob
       return {  # pytype: disable=bad-return-type  # numpy-scalars
-          'action': action,
+          'action': action,  # pyrefly: ignore[bad-assignment]
           'reward': reward,
           'regret': regret,
           'chosen_prob': chosen_prob,  # for debugging
@@ -201,7 +201,7 @@ class ThompsonEnnBandit:
         x=actions,
         y=rewards,
         data_index=indices,
-        extra={'num_steps': self.num_steps},  # pyrefly: ignore[bad-argument-type]
+        extra={'num_steps': self.num_steps},  # pyrefly: ignore[bad-argument-type, bad-assignment]
     )
 
 

@@ -112,7 +112,7 @@ class GaussianSmoothedSampleKL(likelihood_base.SampleBasedKL):
       chex.assert_shape(enn_mean, [tau, 1])
 
       # Estimates the covariance matrix with bias (simple variance in tau=1).
-      enn_cov = jnp.cov(enn_samples[:, :, 0], rowvar=False, bias=True)
+      enn_cov = jnp.cov(enn_samples[:, :, 0], rowvar=False, bias=True)  # pyrefly: ignore[bad-index]
       if tau == 1:
         enn_cov = enn_cov[None, None]
       enn_cov += self.cov_ridge * jnp.eye(tau)
