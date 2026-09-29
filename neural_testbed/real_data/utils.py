@@ -56,7 +56,7 @@ def _preprocess_structured_data(
   chex.assert_shape(label, ())
   label = tf.expand_dims(label, -1)
 
-  return testbed_base.Data(x=features, y=label)
+  return testbed_base.Data(x=features, y=label)  # pyrefly: ignore[bad-argument-type]
 
 
 def _preprocess_image_data(dataset: Dict[str, chex.Array]) -> testbed_base.Data:
