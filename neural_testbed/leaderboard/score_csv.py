@@ -46,7 +46,7 @@ def _load_entry(entry: entries_csv.Entry) -> Tuple[pd.DataFrame, Sequence[str]]:
     df['results_dir'] = results_dir
     data.append(df)
   df = pd.concat(data, sort=False)
-  return df, []  # pyrefly: ignore[bad-return]
+  return df, []
 
 
 def load_entries(

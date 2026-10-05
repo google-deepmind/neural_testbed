@@ -63,7 +63,7 @@ def extract_enn_sampler(enn: networks.EnnArray,
     """Generate a random sample from posterior distribution at x."""
     # pylint: disable=cell-var-from-loop
     param_index = jax.random.randint(key, [], 0, len(params_list))
-    fns = [lambda x, w=p: enn.apply(w, {}, x, 0) for p in params_list]  # pytype: disable=missing-parameter
+    fns = [lambda x, w=p: enn.apply(w, {}, x, 0) for p in params_list]
     out, _ = jax.lax.switch(param_index, fns, x)
     return networks.parse_net_output(out)
   return jax.jit(enn_sampler)
@@ -95,7 +95,7 @@ def make_agent(config: SGMCMCConfig):
       prior_variance *= 2
     scale = (1 / prior_variance) * jnp.sqrt(
         prior.temperature) * prior.input_dim / prior.num_train  # pyrefly: ignore[bad-argument-type]
-    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)  # pytype: disable=wrong-arg-types  # jax-types
+    loss_fn = losses.add_l2_weight_decay(loss_fn, scale=scale)  # pyrefly: ignore[bad-argument-type]
     return loss_fn
 
   log_freq = int(config.num_batches / 50) or 1

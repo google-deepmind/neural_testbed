@@ -32,7 +32,7 @@ def gaussian_log_likelihood(err: chex.Array,
   first_term = len(err) * jnp.log(2 * jnp.pi)  # pyrefly: ignore[bad-argument-type]
   _, second_term = jnp.linalg.slogdet(cov)
   third_term = jnp.einsum('ai,ab,bi->i', err, jnp.linalg.pinv(cov), err)
-  return -0.5 * (first_term + second_term + third_term)  # pytype: disable=bad-return-type  # jax-types
+  return -0.5 * (first_term + second_term + third_term)
 
 
 def optimized_gaussian_ll(err: chex.Array) -> float:
@@ -73,13 +73,13 @@ class GaussianSampleKL(likelihood_base.SampleBasedKL):
       chex.assert_shape(sampled_ll, [self.num_enn_samples, 1])
 
       # TODO(author2): Make sure of our KL computation.()
-      ave_ll = metrics_base.average_sampled_log_likelihood(sampled_ll)  # pytype: disable=wrong-arg-types  # numpy-scalars
+      ave_ll = metrics_base.average_sampled_log_likelihood(sampled_ll)  # pyrefly: ignore[bad-argument-type]
       return true_ll - ave_ll
 
     batched_kl = jax.jit(jax.vmap(kl_estimate))
     kl_keys = jax.random.split(self.key, self.num_test_seeds)
     sampled_kl = batched_kl(kl_keys)
-    return testbed_base.ENNQuality(kl_estimate=jnp.mean(sampled_kl))  # pytype: disable=wrong-arg-types  # jnp-type
+    return testbed_base.ENNQuality(kl_estimate=jnp.mean(sampled_kl))  # pyrefly: ignore[bad-argument-type]
 
 
 @dataclasses.dataclass
@@ -127,4 +127,4 @@ class GaussianSmoothedSampleKL(likelihood_base.SampleBasedKL):
     batched_kl = jax.jit(jax.vmap(kl_estimate))
     kl_keys = jax.random.split(self.key, self.num_test_seeds)
     sampled_kl = batched_kl(kl_keys)
-    return testbed_base.ENNQuality(kl_estimate=jnp.mean(sampled_kl))  # pytype: disable=wrong-arg-types  # jnp-type
+    return testbed_base.ENNQuality(kl_estimate=jnp.mean(sampled_kl))  # pyrefly: ignore[bad-argument-type]

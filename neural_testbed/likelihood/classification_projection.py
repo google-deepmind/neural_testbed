@@ -125,7 +125,7 @@ class CategoricalClusterKL(likelihood_base.SampleBasedKL):
       """Estimates the KL for one realization of the data."""
       data, true_ll = test_data_fn(key)
       logits = get_logits(data.x)
-      return true_ll - joint_ll_calculator(logits, data.y)  # pyrefly: ignore[bad-return]
+      return true_ll - joint_ll_calculator(logits, data.y)
 
     kl_keys = jax.random.split(kl_key, self.num_test_seeds)
     try:
@@ -273,7 +273,7 @@ class RandomProjection(ClusterAlg):
         return (numerator + 1e-6) / (denominator + 1e-6)
 
       single_center = jax.vmap(single_center_per_t, in_axes=[None, 0])
-      map_fn = lambda x: single_center(x, jnp.arange(tau))  # pytype: disable=wrong-arg-types  # jnp-type
+      map_fn = lambda x: single_center(x, jnp.arange(tau))  # pyrefly: ignore[bad-argument-type]
       all_centers = jax.lax.map(map_fn, features)
       chex.assert_shape(all_centers, [num_features, tau])
 

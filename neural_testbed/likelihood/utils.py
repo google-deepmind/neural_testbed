@@ -48,7 +48,7 @@ def log_sum_prod(nu: chex.Array, q_hat: chex.Array) -> float:
   # Use rebasing trick to maintain numerical stability
   base = jnp.max(log_prod_qs)
   ll = jsp.logsumexp(log_prod_qs - base, b=nu) + base
-  return ll  # pytype: disable=bad-return-type
+  return ll  # pyrefly: ignore[bad-return]
 
 
 def parse_kl_estimates(kl_estimates: chex.Array) -> testbed_base.ENNQuality:
@@ -74,5 +74,5 @@ def parse_kl_estimates(kl_estimates: chex.Array) -> testbed_base.ENNQuality:
       'test_ece': None,
       'pct_finite_kl': float(pct_finite_kl)
   }
-  return testbed_base.ENNQuality(kl_estimate=kl_estimate, extra=extra)  # pytype: disable=wrong-arg-types  # jnp-type
+  return testbed_base.ENNQuality(kl_estimate=kl_estimate, extra=extra)  # pyrefly: ignore[bad-argument-type]
 

@@ -57,7 +57,7 @@ def sanity_plots(
     if not hasattr(true_model, 'data_sampler'):
       raise ValueError('Error in plotting infrastructure.')
     problem = true_model.data_sampler
-    return generate_2d_plots(problem, enn_sampler)  # pytype:disable=wrong-arg-types
+    return generate_2d_plots(problem, enn_sampler)
   else:
     return {'enn': sanity_1d(true_model, enn_sampler)}
 
@@ -250,7 +250,7 @@ def _gen_samples_2d(enn_sampler: testbed_base.EpistemicSampler,
     y = jax.nn.softmax(net_out)[:, 1] if categorical else net_out[:, 0]  # pyrefly: ignore[bad-index]
     df = pd.DataFrame({'x0': x[:, 0], 'x1': x[:, 1], 'y': y, 'seed': seed})  # pyrefly: ignore[bad-index]
     data.append(df)
-  return pd.concat(data)  # pyrefly: ignore[bad-return]
+  return pd.concat(data)
 
 
 def _agg_samples_2d(sample_df: pd.DataFrame) -> pd.DataFrame:

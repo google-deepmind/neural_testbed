@@ -159,7 +159,7 @@ class ThompsonEnnBandit:
       chosen_prob = self.probs[action]
       reward = jax.random.bernoulli(noise_key, chosen_prob)
       regret = self.max_prob - chosen_prob
-      return {  # pytype: disable=bad-return-type  # numpy-scalars
+      return {
           'action': action,  # pyrefly: ignore[bad-assignment]
           'reward': reward,
           'regret': regret,
@@ -197,11 +197,11 @@ class ThompsonEnnBandit:
 
   def _get_batch(self) -> datasets.ArrayBatch:
     actions, rewards, indices = self.replay.sample(self._batch_size)
-    return datasets.ArrayBatch(  # pytype: disable=wrong-arg-types  # numpy-scalars
+    return datasets.ArrayBatch(
         x=actions,
         y=rewards,
         data_index=indices,
-        extra={'num_steps': self.num_steps},  # pyrefly: ignore[bad-argument-type, bad-assignment]
+        extra={'num_steps': self.num_steps},  # pyrefly: ignore[bad-assignment]
     )
 
 
@@ -210,4 +210,4 @@ def _random_argmax(
 ) -> int:
   """Select argmax with additional random noise."""
   noise = jax.random.uniform(key, vals.shape)
-  return jnp.argmax(vals + scale * noise, axis=0)  # pytype: disable=bad-return-type  # jnp-type
+  return jnp.argmax(vals + scale * noise, axis=0)  # pyrefly: ignore[bad-return]

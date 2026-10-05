@@ -234,7 +234,7 @@ def enn_paper_test_sweep() -> Dict[str, ProblemConfig]:
 def _filter_unique_configs(
     configs: Sequence[ProblemConfig],
     filter_fn: Callable[[ProblemConfig], bool] = lambda _: True,
-) -> List[ProblemConfig]:  # pytype: disable=annotation-type-mismatch
+) -> List[ProblemConfig]:
   """Filters a list of problem_config to their unique occurrences for testing.
 
   Args:

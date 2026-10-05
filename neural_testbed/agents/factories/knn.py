@@ -58,6 +58,6 @@ def make_agent(config: KnnConfig) -> testbed_base.TestbedAgent:
       probs = np.minimum(np.maximum(probs, 0.01), 0.99)
       return np.log(probs)  # return logits
 
-    return enn_sampler  # pytype: disable=bad-return-type
+    return enn_sampler  # pyrefly: ignore[bad-return]
 
   return knn_agent

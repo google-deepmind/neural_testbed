@@ -135,7 +135,7 @@ class MlpWithActivations(hk.Module):
       if i < (num_layers - 1):  # don't activate final layer
         out = self.activation(out)
 
-    return (out, penultimate_out)  # pytype: disable=bad-return-type  # jax-ndarray
+    return (out, penultimate_out)  # pyrefly: ignore[bad-return, unbound-name]
 
 
 def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
@@ -183,7 +183,7 @@ def make_agent(config: DeepKernelConfig) -> testbed_base.TestbedAgent:
     )
     single_loss = losses.wrap_single_loss_as_single_loss_no_state(single_loss)
     loss_fn = losses.average_single_index_loss_no_state(single_loss,)
-    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=weight_decay)  # pytype: disable=wrong-arg-types  # jax-types
+    loss_fn = losses.add_l2_weight_decay_no_state(loss_fn, scale=weight_decay)  # pyrefly: ignore[bad-argument-type]
     loss_fn = jax.jit(functools.partial(loss_fn, net))  # pyrefly: ignore[bad-argument-type]
 
     optimizer = optax.adam(config.learning_rate)

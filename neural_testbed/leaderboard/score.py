@@ -323,4 +323,4 @@ def _make_leaderboard_dataframe(
         df[col] = 'nan'  # This column was completely missing
       except ValueError:
         pass  # This column did not want to be coerced to 'nan'
-  return df  # pyrefly: ignore[bad-return]
+  return df

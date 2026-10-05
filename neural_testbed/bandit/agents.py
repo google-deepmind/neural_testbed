@@ -98,6 +98,6 @@ def _make_bbb_bandit_loss(config: bbb.BBBConfig) -> agents.LossCtor:
       prior_kl *= 2 * jnp.sqrt(prior.temperature) / batch.extra['num_steps']  # pyrefly: ignore[bad-argument-type]
       return prior_kl - log_likelihood, (state, {})
 
-    return losses.average_single_index_loss(elbo_loss, config.num_index_samples)  # pyrefly: ignore[bad-argument-type]
+    return losses.average_single_index_loss(elbo_loss, config.num_index_samples)
 
   return loss_ctor

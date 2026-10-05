@@ -181,7 +181,7 @@ class TestbedGPRegression(testbed_base.TestbedProblem):
     kl_estimates = batched_kl(posterior_mean, posterior_std, enn_mean, enn_std)
     chex.assert_shape(kl_estimates, [num_test])
     kl_estimate = jnp.mean(kl_estimates)
-    return testbed_base.ENNQuality(kl_estimate)  # pytype: disable=wrong-arg-types  # jnp-type
+    return testbed_base.ENNQuality(kl_estimate)  # pyrefly: ignore[bad-argument-type]
 
 
 def _kl_gaussian(
@@ -189,4 +189,4 @@ def _kl_gaussian(
   """Computes the KL(P_1 || P_2) for P_1,P_2 univariate Gaussian."""
   log_term = jnp.log(std_2 / std_1)
   frac_term = (std_1 ** 2 + (mean_1 - mean_2) ** 2) / (2 * std_2 ** 2)
-  return log_term + frac_term - 0.5  # pytype: disable=bad-return-type  # jax-types
+  return log_term + frac_term - 0.5  # pyrefly: ignore[bad-return]
