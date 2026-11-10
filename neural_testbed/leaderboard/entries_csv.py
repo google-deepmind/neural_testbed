@@ -15,9 +15,8 @@
 # ============================================================================
 """Leaderboard entries are stored here."""
 
-from typing import Sequence
-
 import dataclasses
+from typing import Sequence
 
 
 @dataclasses.dataclass
@@ -25,11 +24,12 @@ class Entry:
   name: str  # A string to describe this leaderboard entry.
   results_dir: str  # A directory to store the output csv.
 
+
 # pylint:disable=line-too-long
 
 
-def get_baselines() -> Sequence[Entry]:
+def get_baselines(results_dir: str) -> Sequence[Entry]:
   """Default baselines for the testbed leaderboard."""
   return [
-      Entry('uniform', '/tmp/neural_testbed'),  # Uniform baseline
+      Entry('uniform', results_dir),  # Uniform baseline
   ]

@@ -14,8 +14,7 @@
 # limitations under the License.
 # ============================================================================
 
-"""Tests for neural_testbed.leaderboard.score_csv."""
-
+import os
 import sys
 
 from absl import flags
@@ -34,9 +33,9 @@ def log_fake_results(problem_id: str, results_dir: str) -> None:
   """Populate a fake set of results."""
   logger = csv_logger.Logger(problem_id, results_dir)
   logger.write({
-      'kl_estimate': 10.,
-      'total_seconds': 2.,
-      'train_seconds': 1.,
+      'kl_estimate': 10.0,
+      'total_seconds': 2.0,
+      'train_seconds': 1.0,
   })
 
 
@@ -60,26 +59,73 @@ class ScoreCsvTest(parameterized.TestCase):
     data = score_csv.load_entries(entry)
 
     # Check that the data is the right type
-    self.assertIsInstance(data, score.LeaderboardData,
-                          'Data is not the right type')
+    self.assertIsInstance(
+        data, score.LeaderboardData, 'Data is not the right type'
+    )
 
     # Check that the agent name has been passed through
     self.assertIn(name, data.names, 'the agent name has been passed through.')
 
     # Check that sweep metadata is joined correctly on problem_id
-    self.assertIn('problem_id', data.df.columns,
-                  'sweep metadata is not joined correctly on problem_id.')
+    self.assertIn(
+        'problem_id',
+        data.df.columns,
+        'sweep metadata is not joined correctly on problem_id.',
+    )
 
     # Check that we only loaded one agent
     self.assertLen(data.agents, 1)
     agent_data = data.agents[0]
-    self.assertIsInstance(agent_data, score.AgentData,
-                          'Agent data is not the right type.')
+    self.assertIsInstance(
+        agent_data, score.AgentData, 'Agent data is not the right type.'
+    )
 
     # Check the quality of this single agent data
-    self.assertEqual(agent_data.name, name,
-                     'Agent data does not have the correct name.')
+    self.assertEqual(
+        agent_data.name, name, 'Agent data does not have the correct name.'
+    )
     self.assertLess(agent_data.pct_health, 0.5, 'Health is less that 50%.')
+
+  def test_load_entries_refuses_symlink_csv(self):
+    try:
+      flags.FLAGS.test_tmpdir
+    except flags.UnparsedFlagAccessError:
+      flags.FLAGS(sys.argv)
+    results_dir = self.create_tempdir().full_path
+    target_file = self.create_tempfile(content='kl_estimate\n1.0\n').full_path
+    symlink_csv = os.path.join(
+        results_dir, 'problem_id_-_classification_2d-0.csv'
+    )
+    os.symlink(target_file, symlink_csv)
+
+    entry = entries_csv.Entry('agent', results_dir)
+    with self.assertRaisesRegex(RuntimeError, 'symbolic link'):
+      score_csv.load_entries(entry)
+
+  def test_load_entries_refuses_symlink_results_dir(self):
+    try:
+      flags.FLAGS.test_tmpdir
+    except flags.UnparsedFlagAccessError:
+      flags.FLAGS(sys.argv)
+    parent_dir = self.create_tempdir().full_path
+    target_dir = self.create_tempdir().full_path
+    symlink_dir = os.path.join(parent_dir, 'linked_dir')
+    os.symlink(target_dir, symlink_dir)
+
+    entry = entries_csv.Entry('agent', symlink_dir + os.sep)
+    with self.assertRaisesRegex(RuntimeError, 'symbolic link'):
+      score_csv.load_entries(entry)
+
+  def test_get_baselines_uses_explicit_results_dir(self):
+    try:
+      flags.FLAGS.test_tmpdir
+    except flags.UnparsedFlagAccessError:
+      flags.FLAGS(sys.argv)
+    results_dir = self.create_tempdir().full_path
+    baselines = entries_csv.get_baselines(results_dir)
+    self.assertSequenceEqual(
+        baselines, [entries_csv.Entry('uniform', results_dir)]
+    )
 
 
 if __name__ == '__main__':

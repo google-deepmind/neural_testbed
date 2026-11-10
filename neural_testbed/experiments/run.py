@@ -1,4 +1,3 @@
-
 # python3
 # pylint: disable=g-bad-file-header
 # Copyright 2021 DeepMind Technologies Limited. All Rights Reserved.
@@ -17,6 +16,10 @@
 # ============================================================================
 """A simple example running an ENN on the testbed."""
 
+import functools
+import tempfile
+from typing import Optional
+
 from absl import app
 from absl import flags
 from neural_testbed import leaderboard
@@ -27,29 +30,43 @@ from neural_testbed.leaderboard import sweep
 
 # Option to configue the leaderboard problem instance.
 # To do a *sweep* over all problem_ids pass --problem_id=SWEEP
-flags.DEFINE_string('problem_id', 'classification_2d/0',
-                    'ID for leaderboard GP.')
+flags.DEFINE_string(
+    'problem_id', 'classification_2d/0', 'ID for leaderboard GP.'
+)
 
 # Options for logging results to csv for evaluation later.
 flags.DEFINE_string(
-    'results_dir', '/tmp/neural_testbed', 'Where to store results as csv.')
+    'results_dir',
+    None,
+    'Where to store results as csv. If unset, a secure temporary directory is '
+    'created via tempfile.mkdtemp.',
+)
 flags.DEFINE_bool('overwrite_csv', True, 'Whether to overwrite existing csv.')
 
 # Loading agent from factories, #sweep_id config within agent_name sweep
 flags.DEFINE_string('agent_name', 'mlp', 'Agent to load')
 flags.DEFINE_integer('sweep_id', -1, 'Agent within sweep, <0 gives default.')
 flags.DEFINE_integer(
-    'num_batches', -1,
-    'override number of training batch. Mostly used for testing.')
+    'num_batches',
+    -1,
+    'override number of training batch. Mostly used for testing.',
+)
 
 FLAGS = flags.FLAGS
 
 
-def run_single_problem(problem_id: str) -> str:
+def run_single_problem(
+    problem_id: str, results_dir: Optional[str] = None
+) -> str:
   """Evaluates the agent on a single problem instance."""
+  if results_dir is None:
+    results_dir = FLAGS.results_dir or tempfile.mkdtemp(
+        prefix='neural_testbed_'
+    )
   # Load the problem via problem_id.
   problem = leaderboard.problem_from_id_csv(
-      problem_id, FLAGS.results_dir, FLAGS.overwrite_csv)
+      problem_id, results_dir, FLAGS.overwrite_csv
+  )
 
   # Define the agent. Here we are constructing one of the benchmark agents
   # implemented in the factories package.
@@ -64,18 +81,22 @@ def run_single_problem(problem_id: str) -> str:
 
   # Run the experiment and output the KL score.
   kl_quality = experiment.run(agent, problem)
-  print(f'kl_quality={kl_quality}, write csv to {FLAGS.results_dir}')
+  print(f'kl_quality={kl_quality}, write csv to {results_dir}')
   return problem_id
 
 
 def main(_):
+  results_dir = FLAGS.results_dir or tempfile.mkdtemp(prefix='neural_testbed_')
   if FLAGS.problem_id == 'SWEEP':
     # Perform a sweep over all the relevant problem_id for full evaluation.
-    pool.map_mpi(run_single_problem, sweep.CLASSIFICATION_2D)
+    pool.map_mpi(
+        functools.partial(run_single_problem, results_dir=results_dir),
+        sweep.CLASSIFICATION_2D,
+    )
 
   else:
     # Run just a single problem_id.
-    run_single_problem(FLAGS.problem_id)
+    run_single_problem(FLAGS.problem_id, results_dir=results_dir)
 
 
 if __name__ == '__main__':

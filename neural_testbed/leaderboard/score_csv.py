@@ -16,6 +16,7 @@
 
 """Load testbed entries from csv file."""
 
+import errno
 import glob
 import os
 from typing import Any, Sequence, Tuple
@@ -31,15 +32,41 @@ def _load_entry(entry: entries_csv.Entry) -> Tuple[pd.DataFrame, Sequence[str]]:
   """Loads a single entry from csv logs."""
   data = []
   results_dir = entry.results_dir
+  stripped_dir = results_dir.rstrip(os.sep)
+  if os.altsep:
+    stripped_dir = stripped_dir.rstrip(os.altsep)
+  if os.path.islink(stripped_dir or os.sep):
+    raise RuntimeError(
+        f'Refusing to read from {results_dir}: results_dir is a symbolic link.'
+    )
   for file_path in glob.glob(os.path.join(results_dir, '*.csv')):
     _, name = os.path.split(file_path)
     # Rough and ready error-checking for only neural testbed csv files.
     if not name.startswith(csv_logger.GP_PREFIX):
       print('Warning - we recommend you use a fresh folder for the results.')
       continue
+    if os.path.islink(file_path):
+      raise RuntimeError(
+          f'Refusing to read from {file_path}: path is a symbolic link.'
+      )
 
     # Then we will assume that the file is actually a neural testbed result
-    df = pd.read_csv(file_path)
+    open_flags = os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0)
+    try:
+      fd = os.open(file_path, open_flags)
+    except OSError as e:
+      if e.errno == errno.ELOOP:
+        raise RuntimeError(
+            f'Refusing to read from {file_path}: path is a symbolic link.'
+        ) from e
+      raise
+    try:
+      f = os.fdopen(fd, 'r', encoding='utf-8')
+    except Exception:
+      os.close(fd)
+      raise
+    with f:
+      df = pd.read_csv(f)
     file_id = name.strip('.csv').split(csv_logger.INITIAL_SEPARATOR)[1]
     problem_id = file_id.replace(csv_logger.SAFE_SEPARATOR, sweep.SEPARATOR)
     df['problem_id'] = problem_id
@@ -55,5 +82,8 @@ def load_entries(
     verbose: bool = True,
 ) -> score.LeaderboardData:
   """Loads leaderboard entries and outputs a list of cleaned AgentData."""
-  return score.LeaderboardData(*score.load_entries(
-      leaderboard_entries, _load_entry, leaderboard_sweep, verbose))
+  return score.LeaderboardData(
+      *score.load_entries(
+          leaderboard_entries, _load_entry, leaderboard_sweep, verbose
+      )
+  )
