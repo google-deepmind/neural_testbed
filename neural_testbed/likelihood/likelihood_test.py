@@ -232,5 +232,66 @@ class UtilTest(parameterized.TestCase):
     )
 
 
+class GaussianSampleKLKeyIndependenceTest(parameterized.TestCase):
+  """GaussianSampleKL must not feed the test-data sampler and the ENN
+  sampler the same (or a correlated) PRNG key -- jax.random.split(key, N)
+  shares a common prefix with jax.random.split(key, M) for any N, M, so
+  splitting the same key twice for two different consumers silently
+  correlates them instead of treating them as independent sources of
+  randomness.
+  """
+
+  class _KeyRecordingDataSampler(likelihood.GenerativeDataSampler):
+    """Records every key it is asked to generate test data with."""
+
+    def __init__(self):
+      self.seen_keys = []
+
+    @property
+    def train_data(self) -> testbed_base.Data:
+      raise ValueError('This problem should not be used for training.')
+
+    def test_data(self, key: chex.PRNGKey) -> Tuple[testbed_base.Data, float]:
+      self.seen_keys.append(key)
+      data = testbed_base.Data(jnp.zeros([1, 1]), jnp.zeros([1, 1]))
+      return data, 0.0
+
+  class _KeyRecordingEnn(testbed_base.EpistemicSampler):
+    """Records every key it is asked to sample with."""
+
+    def __init__(self):
+      self.seen_keys = []
+
+    def __call__(self, x: chex.Array, key: chex.PRNGKey) -> chex.Array:
+      self.seen_keys.append(key)
+      return jnp.zeros([x.shape[0], 1])
+
+  def test_data_and_enn_keys_are_independent(self):
+    data_sampler = self._KeyRecordingDataSampler()
+    enn = self._KeyRecordingEnn()
+    sample_kl_estimator = likelihood.GaussianSampleKL(
+        num_test_seeds=1,
+        num_enn_samples=5,
+        enn_sigma=1.0,
+        key=jax.random.PRNGKey(0),
+    )
+    # jax.disable_jit so the recorder callbacks above see real, concrete
+    # key values rather than abstract tracers.
+    with jax.disable_jit():
+      sample_kl_estimator(enn, data_sampler)
+
+    self.assertLen(data_sampler.seen_keys, 1)
+    self.assertLen(enn.seen_keys, 5)
+    data_key = data_sampler.seen_keys[0]
+    for enn_key in enn.seen_keys:
+      self.assertFalse(
+          jnp.array_equal(data_key, enn_key),
+          msg=(
+              'ENN sampling key must not be identical to the key the data'
+              ' sampler used to generate test data.'
+          ),
+      )
+
+
 if __name__ == '__main__':
   absltest.main()

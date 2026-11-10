@@ -60,9 +60,10 @@ class GaussianSampleKL(likelihood_base.SampleBasedKL):
 
     def kl_estimate(key: chex.PRNGKey) -> float:
       """Computes KL estimate on a single instance of test data."""
-      data, true_ll = data_sampler.test_data(key)
+      data_key, enn_key = jax.random.split(key)
+      data, true_ll = data_sampler.test_data(data_key)
       tau = data.x.shape[0]
-      data_keys = jax.random.split(key, self.num_enn_samples)
+      data_keys = jax.random.split(enn_key, self.num_enn_samples)
       samples = batched_sampler(data.x, data_keys)
       batched_err = samples - jnp.expand_dims(data.y, 0)
       chex.assert_shape(batched_err, [self.num_enn_samples, tau, 1])
